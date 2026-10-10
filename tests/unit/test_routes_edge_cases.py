@@ -79,6 +79,13 @@ def test_post_missing_renewal_date_returns_422(client):
     assert response.status_code == 422
 
 
+def test_post_blank_name_returns_422(client):
+    payload = _valid_payload()
+    payload["name"] = "   "
+    response = client.post("/subscriptions", json=payload)
+    assert response.status_code == 422
+
+
 # ---------------------------------------------------------------------------
 # 2. GET /subscriptions — empty store → []
 # ---------------------------------------------------------------------------
@@ -130,6 +137,35 @@ def test_put_empty_body_returns_422(client):
 
     response = client.put(f"/subscriptions/{subscription_id}", json={})
     assert response.status_code == 422
+
+
+def test_put_only_null_fields_returns_422(client):
+    created = client.post("/subscriptions", json=_valid_payload())
+    assert created.status_code == 201
+    subscription_id = created.json()["subscription_id"]
+
+    response = client.put(f"/subscriptions/{subscription_id}", json={"name": None})
+    assert response.status_code == 422
+
+
+def test_put_reactivation_requires_reviewed_renewal_date(client):
+    payload = {**_valid_payload(), "is_active": False}
+    created = client.post("/subscriptions", json=payload)
+    assert created.status_code == 201
+    subscription_id = created.json()["subscription_id"]
+
+    without_review = client.put(
+        f"/subscriptions/{subscription_id}", json={"is_active": True}
+    )
+    assert without_review.status_code == 422
+
+    reviewed_date = (date.today() + timedelta(days=45)).isoformat()
+    with_review = client.put(
+        f"/subscriptions/{subscription_id}",
+        json={"is_active": True, "renewal_date": reviewed_date},
+    )
+    assert with_review.status_code == 200
+    assert with_review.json()["renewal_date"] == reviewed_date
 
 
 # ---------------------------------------------------------------------------
