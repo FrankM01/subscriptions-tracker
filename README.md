@@ -1,5 +1,22 @@
 # Subscriptions Tracker
 
+## Instalación desde una copia limpia
+
+Desde la raíz del proyecto, crea el entorno e instala las dependencias de la API:
+
+```sh
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+```
+
+Instala las dependencias de la interfaz una vez:
+
+```sh
+cd frontend
+pnpm install
+cd ..
+```
+
 ## Base de datos local
 
 El proyecto usa SQLite y Alembic. Por defecto, la base se guarda en
@@ -31,14 +48,33 @@ fecha e importe pagados y una copia del calendario resultante para permitir
 validar una futura reversión. SQLite aplica las claves foráneas, incluida la
 eliminación en cascada del historial al borrar una suscripción.
 
-## Desarrollo de la aplicación web
+## Respaldo y restauración
 
-Instala las dependencias del frontend una vez:
+Detén la API antes de restaurar. Los comandos siguientes se ejecutan desde la
+raíz del proyecto y usan la base definida por `SUBSCRIPTIONS_DATABASE_URL` o,
+si no está configurada, `data/control_budget.db`.
+
+Crea un respaldo nuevo. El comando verifica la integridad y el esquema SQLite y
+no sobrescribe un archivo existente:
 
 ```sh
-cd frontend
-pnpm install
+.venv/bin/python -m scripts.backup_db --output "$HOME/Documents/control-budget-backups/subscriptions-$(date +%Y%m%d-%H%M%S).db"
 ```
+
+Copia los respaldos a otro medio o ubicación para conservarlos si falla el
+equipo. Para restaurar, pasa el archivo y confirma explícitamente el reemplazo:
+
+```sh
+.venv/bin/python -m scripts.restore_db --input "$HOME/Documents/control-budget-backups/subscriptions-20261010-120000.db" --confirm
+.venv/bin/python -m alembic upgrade head
+```
+
+Antes de reemplazar una base existente, el comando guarda automáticamente una
+copia `*.pre-restore-*.db` junto a la base activa. Si la restauración falla
+antes del reemplazo, conserva la base activa. Tras actualizar las migraciones,
+puedes iniciar la aplicación normalmente.
+
+## Desarrollo de la aplicación web
 
 En una terminal, desde la raíz del proyecto, inicia la API:
 
