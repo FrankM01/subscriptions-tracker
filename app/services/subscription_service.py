@@ -1,5 +1,4 @@
 import uuid
-from datetime import date
 
 from fastapi import HTTPException
 
@@ -105,6 +104,12 @@ class SubscriptionService:
         except RenewalConflictError as error:
             raise HTTPException(status_code=409, detail=str(error)) from error
 
+    def list_renewals(self, subscription_id: str) -> list[RenewalEntry]:
+        self._check_availability()
+        if self._repository.get(subscription_id) is None:
+            raise HTTPException(status_code=404, detail="Subscription not found")
+        return self._repository.list_renewals(subscription_id)
+
     def get_summary(self) -> SummaryResponse:
         self._check_availability()
         subscriptions = self._repository.list_all()
@@ -114,4 +119,4 @@ class SubscriptionService:
     def get_alerts(self) -> list[RenewalAlert]:
         self._check_availability()
         subscriptions = self._repository.list_all()
-        return AlertEngine.evaluate(subscriptions, date.today())
+        return AlertEngine.evaluate(subscriptions, today_in_lima())

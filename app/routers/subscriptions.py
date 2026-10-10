@@ -5,6 +5,8 @@ from fastapi import APIRouter, Response, status
 from app.models.subscription import (
     ErrorResponse,
     RenewalAlert,
+    RenewalConfirmation,
+    RenewalEntry,
     Subscription,
     SubscriptionCreate,
     SubscriptionUpdate,
@@ -61,6 +63,48 @@ def create_subscription(data: SubscriptionCreate) -> Subscription:
 )
 def list_subscriptions() -> list[Subscription]:
     return _service.list_all()
+
+
+@router.get(
+    "/{subscription_id}/renewals",
+    response_model=list[RenewalEntry],
+    responses={
+        404: {"model": ErrorResponse},
+        500: {"model": ErrorResponse},
+    },
+)
+def list_subscription_renewals(subscription_id: UUID) -> list[RenewalEntry]:
+    return _service.list_renewals(str(subscription_id))
+
+
+@router.post(
+    "/{subscription_id}/renewals",
+    response_model=RenewalEntry,
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        404: {"model": ErrorResponse},
+        409: {"model": ErrorResponse},
+        422: {"description": "Request validation error"},
+        500: {"model": ErrorResponse},
+    },
+)
+def confirm_subscription_renewal(
+    subscription_id: UUID, data: RenewalConfirmation
+) -> RenewalEntry:
+    return _service.confirm_renewal(str(subscription_id), data)
+
+
+@router.post(
+    "/{subscription_id}/renewals/undo",
+    response_model=Subscription,
+    responses={
+        404: {"model": ErrorResponse},
+        409: {"model": ErrorResponse},
+        500: {"model": ErrorResponse},
+    },
+)
+def undo_subscription_renewal(subscription_id: UUID) -> Subscription:
+    return _service.undo_latest_renewal(str(subscription_id))
 
 
 @router.put(
