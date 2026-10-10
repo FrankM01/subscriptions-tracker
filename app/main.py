@@ -1,4 +1,7 @@
+from pathlib import Path
+
 from fastapi import FastAPI
+from app.frontend import mount_frontend
 
 from app.routers.subscriptions import router as subscriptions_router, set_service
 from app.services.subscription_service import SubscriptionService
@@ -16,3 +19,7 @@ set_service(service)
 app = FastAPI(title="Subscriptions Tracker", version="1.0.0")
 
 app.include_router(subscriptions_router)
+
+# The API stays usable during development before the frontend is built.
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+mount_frontend(app, PROJECT_ROOT / "frontend" / "dist")
