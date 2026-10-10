@@ -76,9 +76,21 @@ class SubscriptionUpdate(BaseModel):
 class RenewalConfirmation(BaseModel):
     """Command to confirm the specific currently pending billing period."""
 
-    scheduled_date: date
-    paid_date: date | None = None
-    paid_amount: Decimal | None = Field(default=None, gt=0, decimal_places=2)
+    scheduled_date: date = Field(
+        description="Expected pending renewal date; prevents confirming a stale period."
+    )
+    paid_date: date | None = Field(
+        default=None,
+        description="Actual payment date. Defaults to today in America/Lima.",
+    )
+    paid_amount: Decimal | None = Field(
+        default=None,
+        gt=0,
+        decimal_places=2,
+        description=(
+            "Amount paid in PEN as a decimal string. Defaults to the current subscription cost."
+        ),
+    )
 
     @field_validator("paid_date")
     @classmethod
@@ -89,11 +101,13 @@ class RenewalConfirmation(BaseModel):
 
 
 class RenewalEntry(BaseModel):
-    renewal_id: int
-    subscription_id: UUID
-    scheduled_date: date
-    paid_date: date
-    paid_amount: Decimal
+    renewal_id: int = Field(description="Database identifier for this payment record.")
+    subscription_id: UUID = Field(description="Subscription associated with this payment.")
+    scheduled_date: date = Field(description="Renewal date that this payment confirms.")
+    paid_date: date = Field(description="Calendar date on which the payment was made.")
+    paid_amount: Decimal = Field(
+        description="Amount paid in PEN, serialized as a decimal string."
+    )
 
 
 class SummaryResponse(BaseModel):
@@ -105,8 +119,10 @@ class RenewalAlert(BaseModel):
     name: str
     renewal_date: date
     billing_cycle: BillingCycle
-    days_until_renewal: int
+    days_until_renewal: int = Field(
+        description="Days until renewal; negative values identify overdue pending renewals."
+    )
 
 
 class ErrorResponse(BaseModel):
-    detail: str
+    detail: str = Field(description="Human-readable API error message.")
