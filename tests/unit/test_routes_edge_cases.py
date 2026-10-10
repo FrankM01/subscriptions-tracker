@@ -17,10 +17,10 @@ from datetime import date, timedelta
 import pytest
 from fastapi.testclient import TestClient
 
-from app.main import app, store
+from app.main import app
 from app.routers.subscriptions import set_service
 from app.services.subscription_service import SubscriptionService
-from app.store.subscription_store import SubscriptionStore
+from tests.helpers import temporary_repository
 
 
 # ---------------------------------------------------------------------------
@@ -28,12 +28,11 @@ from app.store.subscription_store import SubscriptionStore
 # ---------------------------------------------------------------------------
 
 @pytest.fixture(autouse=True)
-def reset_store():
-    """Reset the shared store before each test to ensure isolation."""
-    store._store = {}
-    set_service(SubscriptionService(store))
-    yield
-    store._store = {}
+def configure_repository():
+    """Give each route test an isolated in-memory SQLite database."""
+    with temporary_repository() as repository:
+        set_service(SubscriptionService(repository))
+        yield repository
 
 
 @pytest.fixture()
@@ -160,12 +159,8 @@ def test_get_alerts_subscription_outside_window_returns_empty_list(client):
 # 7. Store unavailable → 500
 # ---------------------------------------------------------------------------
 
-def test_get_subscriptions_store_unavailable_returns_500(client):
-    """Requirements 5.5, 6.9 — when the store is unavailable, the API returns 500."""
-    original = store._store
-    try:
-        store._store = None
-        response = client.get("/subscriptions")
-        assert response.status_code == 500
-    finally:
-        store._store = original
+def test_get_subscriptions_database_unavailable_returns_500(client, configure_repository):
+    """When the database engine is unavailable, the API returns 500."""
+    configure_repository._engine = None
+    response = client.get("/subscriptions")
+    assert response.status_code == 500

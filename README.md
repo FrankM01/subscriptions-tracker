@@ -37,8 +37,8 @@ eliminación en cascada del historial al borrar una suscripción.
 .venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-La API todavía utiliza el almacén en memoria. Conectar sus operaciones a SQLite
-corresponde a la siguiente tarea de persistencia (T1.3).
+La API usa el repositorio SQLite configurado. Ejecuta primero la migración para
+que existan las tablas antes de iniciar FastAPI.
 
 ## Pruebas
 
