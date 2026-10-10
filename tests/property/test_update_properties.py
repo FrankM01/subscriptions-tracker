@@ -72,6 +72,8 @@ def original_and_update(draw):
 
     # Draw new values for the chosen fields
     update = draw(st.fixed_dictionaries({f: _field_value_strategies[f] for f in fields}))
+    if original["is_active"] is False and update.get("is_active") is True:
+        update["renewal_date"] = draw(_field_value_strategies["renewal_date"])
 
     return original, update
 

@@ -4,6 +4,8 @@ from datetime import date
 from fastapi import HTTPException
 
 from app.models.subscription import (
+    RenewalConfirmation,
+    RenewalEntry,
     RenewalAlert,
     Subscription,
     SubscriptionCreate,
@@ -12,7 +14,12 @@ from app.models.subscription import (
 )
 from app.services.alert_engine import AlertEngine
 from app.services.cost_calculator import CostCalculator
-from app.repositories.subscription_repository import SubscriptionRepository
+from app.repositories.subscription_repository import (
+    RenewalConflictError,
+    SubscriptionNotFoundError,
+    SubscriptionRepository,
+)
+from app.utils.dates import today_in_lima
 
 
 class SubscriptionService:
@@ -42,11 +49,26 @@ class SubscriptionService:
 
     def update(self, subscription_id: str, data: SubscriptionUpdate) -> Subscription:
         self._check_availability()
-        if not data.model_dump(exclude_unset=True):
+        fields = data.model_dump(exclude_unset=True)
+        if not fields or all(value is None for value in fields.values()):
             raise HTTPException(
                 status_code=422,
-                detail="At least one field must be provided for update",
+                detail="At least one non-null field must be provided for update",
             )
+
+        existing = self._repository.get(subscription_id)
+        if existing is None:
+            raise HTTPException(status_code=404, detail="Subscription not found")
+        if (
+            not existing.is_active
+            and fields.get("is_active") is True
+            and fields.get("renewal_date") is None
+        ):
+            raise HTTPException(
+                status_code=422,
+                detail="renewal_date must be reviewed when reactivating a subscription",
+            )
+
         updated = self._repository.update(subscription_id, data)
         if updated is None:
             raise HTTPException(status_code=404, detail="Subscription not found")
@@ -57,6 +79,31 @@ class SubscriptionService:
         deleted = self._repository.delete(subscription_id)
         if not deleted:
             raise HTTPException(status_code=404, detail="Subscription not found")
+
+    def confirm_renewal(
+        self, subscription_id: str, data: RenewalConfirmation
+    ) -> RenewalEntry:
+        self._check_availability()
+        try:
+            return self._repository.confirm_renewal(
+                subscription_id=subscription_id,
+                scheduled_date=data.scheduled_date,
+                paid_date=data.paid_date or today_in_lima(),
+                paid_amount=data.paid_amount,
+            )
+        except SubscriptionNotFoundError as error:
+            raise HTTPException(status_code=404, detail="Subscription not found") from error
+        except RenewalConflictError as error:
+            raise HTTPException(status_code=409, detail=str(error)) from error
+
+    def undo_latest_renewal(self, subscription_id: str) -> Subscription:
+        self._check_availability()
+        try:
+            return self._repository.undo_latest_renewal(subscription_id)
+        except SubscriptionNotFoundError as error:
+            raise HTTPException(status_code=404, detail="Subscription not found") from error
+        except RenewalConflictError as error:
+            raise HTTPException(status_code=409, detail=str(error)) from error
 
     def get_summary(self) -> SummaryResponse:
         self._check_availability()
