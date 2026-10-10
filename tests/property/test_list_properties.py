@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 from app.main import app
 from app.routers.subscriptions import set_service
 from app.services.subscription_service import SubscriptionService
-from app.store.subscription_store import SubscriptionStore
+from tests.helpers import temporary_repository, valid_name_strategy
 
 
 # ---------------------------------------------------------------------------
@@ -32,7 +32,7 @@ future_date = st.dates(
 )
 
 valid_subscription_strategy = st.fixed_dictionaries({
-    "name": st.text(min_size=1, max_size=100),
+    "name": valid_name_strategy(),
     "cost": valid_cost,
     "billing_cycle": billing_cycle_strategy,
     "renewal_date": future_date.map(lambda d: d.isoformat()),
@@ -57,63 +57,42 @@ def test_list_response_contains_required_fields(payloads: list[dict]):
     billing_cycle, renewal_date, and is_active — with no extra or missing fields —
     matching the originally created/updated data.
     """
-    # Fresh isolated store and service for each test run
-    store = SubscriptionStore()
-    service = SubscriptionService(store=store)
-    set_service(service)
+    with temporary_repository() as repository:
+        set_service(SubscriptionService(repository=repository))
+        client = TestClient(app)
 
-    client = TestClient(app)
+        created: dict[str, dict] = {}
+        for payload in payloads:
+            response = client.post("/subscriptions", json={
+                **payload,
+                "cost": str(payload["cost"]),
+            })
+            assert response.status_code == 201, (
+                f"Expected 201 but got {response.status_code}: {response.text}"
+            )
+            body = response.json()
+            created[body["subscription_id"]] = payload
 
-    # POST each subscription and track created data by subscription_id
-    created: dict[str, dict] = {}
-    for payload in payloads:
-        response = client.post("/subscriptions", json={
-            **payload,
-            "cost": str(payload["cost"]),  # serialize Decimal as string for JSON
-        })
-        assert response.status_code == 201, f"Expected 201 but got {response.status_code}: {response.text}"
-        body = response.json()
-        created[body["subscription_id"]] = payload
-
-    # GET /subscriptions
-    list_response = client.get("/subscriptions")
-    assert list_response.status_code == 200, (
-        f"Expected 200 but got {list_response.status_code}: {list_response.text}"
-    )
-
-    items = list_response.json()
-
-    # Each item must have exactly the required fields — no more, no less
-    for item in items:
-        actual_keys = set(item.keys())
-        assert actual_keys == REQUIRED_FIELDS, (
-            f"Item has unexpected fields. "
-            f"Extra: {actual_keys - REQUIRED_FIELDS}, "
-            f"Missing: {REQUIRED_FIELDS - actual_keys}. "
-            f"Item: {item}"
+        list_response = client.get("/subscriptions")
+        assert list_response.status_code == 200, (
+            f"Expected 200 but got {list_response.status_code}: {list_response.text}"
         )
 
-    # Values for created subscriptions must match the original payload
-    items_by_id = {item["subscription_id"]: item for item in items}
-    for sub_id, original_payload in created.items():
-        assert sub_id in items_by_id, f"Created subscription {sub_id} not found in GET /subscriptions response"
-        item = items_by_id[sub_id]
+        items = list_response.json()
+        for item in items:
+            actual_keys = set(item.keys())
+            assert actual_keys == REQUIRED_FIELDS, (
+                f"Item has unexpected fields. "
+                f"Extra: {actual_keys - REQUIRED_FIELDS}, "
+                f"Missing: {REQUIRED_FIELDS - actual_keys}. Item: {item}"
+            )
 
-        assert item["name"] == original_payload["name"], (
-            f"name mismatch for {sub_id}: expected {original_payload['name']!r}, got {item['name']!r}"
-        )
-        assert Decimal(str(item["cost"])) == Decimal(str(original_payload["cost"])), (
-            f"cost mismatch for {sub_id}: expected {original_payload['cost']}, got {item['cost']}"
-        )
-        assert item["billing_cycle"] == original_payload["billing_cycle"], (
-            f"billing_cycle mismatch for {sub_id}: expected {original_payload['billing_cycle']!r}, "
-            f"got {item['billing_cycle']!r}"
-        )
-        assert item["renewal_date"] == original_payload["renewal_date"], (
-            f"renewal_date mismatch for {sub_id}: expected {original_payload['renewal_date']!r}, "
-            f"got {item['renewal_date']!r}"
-        )
-        assert item["is_active"] == original_payload["is_active"], (
-            f"is_active mismatch for {sub_id}: expected {original_payload['is_active']!r}, "
-            f"got {item['is_active']!r}"
-        )
+        items_by_id = {item["subscription_id"]: item for item in items}
+        for sub_id, original_payload in created.items():
+            assert sub_id in items_by_id
+            item = items_by_id[sub_id]
+            assert item["name"] == original_payload["name"]
+            assert Decimal(str(item["cost"])) == Decimal(str(original_payload["cost"]))
+            assert item["billing_cycle"] == original_payload["billing_cycle"]
+            assert item["renewal_date"] == original_payload["renewal_date"]
+            assert item["is_active"] == original_payload["is_active"]

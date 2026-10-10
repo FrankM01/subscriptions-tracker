@@ -6,6 +6,7 @@ from pathlib import Path
 from sqlalchemy import create_engine, event
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.pool import StaticPool
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -35,6 +36,9 @@ def make_engine(database_url: str | None = None, **engine_options) -> Engine:
                 parents=True, exist_ok=True
             )
 
+    if url in {"sqlite://", "sqlite:///:memory:"}:
+        engine_options.setdefault("poolclass", StaticPool)
+        engine_options.setdefault("connect_args", {"check_same_thread": False})
     engine = create_engine(url, **engine_options)
     if engine.dialect.name == "sqlite":
 
