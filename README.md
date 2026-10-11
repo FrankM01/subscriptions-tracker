@@ -41,6 +41,23 @@ de confirmar y deshacer renovaciones conservan la serialización: SQLite toma un
 bloqueo de escritura antes de leer; PostgreSQL bloquea la fila de la suscripción
 dentro de la transacción.
 
+## Migrar los datos locales a PostgreSQL
+
+Detén la aplicación y crea primero una copia verificada de SQLite con el comando
+de respaldo de abajo. Configura `SUBSCRIPTIONS_DATABASE_URL` para apuntar a una
+base PostgreSQL vacía. Aplica el esquema y ejecuta primero la prevalidación:
+
+```sh
+.venv/bin/python -m alembic upgrade head
+.venv/bin/python -m scripts.migrate_sqlite_to_postgres --source /ruta/subscriptions-backup.db --dry-run
+```
+
+Si los conteos son correctos, repite el comando sin `--dry-run` para importar.
+La herramienta exige un destino vacío y actualizado, conserva IDs, importes,
+fechas e historial, y sincroniza la secuencia de renovaciones. Si la importación
+falla, revierte todos los cambios del destino; el archivo SQLite queda intacto.
+Después puedes iniciar la app usando la URL de PostgreSQL.
+
 Desde la raíz del proyecto, crea o actualiza el esquema con:
 
 ```sh
