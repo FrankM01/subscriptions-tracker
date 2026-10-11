@@ -1,7 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { api, ApiError } from "./api";
+import * as auth from "./auth";
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
 
 describe("API client", () => {
   it("uses the renewal API and sends the expected period identifier", async () => {
@@ -17,6 +21,18 @@ describe("API client", () => {
     expect(fetchMock).toHaveBeenCalledWith("/subscriptions/abc-123/renewals", expect.objectContaining({
       method: "POST",
       body: JSON.stringify({ scheduled_date: "2030-01-15", paid_date: "2026-10-10", paid_amount: "19.90" }),
+    }));
+  });
+
+  it("attaches the refreshed Keycloak access token as a bearer token", async () => {
+    vi.spyOn(auth, "getAccessToken").mockResolvedValue("signed-access-token");
+    const fetchMock = vi.fn().mockResolvedValue(new Response("[]", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await api.listSubscriptions();
+
+    expect(fetchMock).toHaveBeenCalledWith("/subscriptions", expect.objectContaining({
+      headers: { Authorization: "Bearer signed-access-token" },
     }));
   });
 

@@ -7,6 +7,7 @@ import type {
   SubscriptionUpdateInput,
   Summary,
 } from "./types";
+import { getAccessToken } from "./auth";
 
 export class ApiError extends Error {
   status: number;
@@ -19,11 +20,19 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  let accessToken: string | undefined;
+  try {
+    accessToken = await getAccessToken();
+  } catch {
+    throw new ApiError(401, "La sesión expiró. Inicia sesión nuevamente.");
+  }
+
   let response: Response;
   try {
     response = await fetch(path, {
       ...init,
       headers: {
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
         ...(init?.body ? { "Content-Type": "application/json" } : {}),
         ...init?.headers,
       },

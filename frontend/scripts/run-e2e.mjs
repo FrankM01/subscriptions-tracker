@@ -9,7 +9,11 @@ const projectRoot = resolve(frontendRoot, "..");
 const python = join(projectRoot, ".venv", "bin", "python");
 const temporaryData = mkdtempSync(join(tmpdir(), "subscriptions-web-e2e-"));
 const databaseUrl = `sqlite:///${join(temporaryData, "test.db")}`;
-const environment = { ...process.env, SUBSCRIPTIONS_DATABASE_URL: databaseUrl };
+const environment = {
+  ...process.env,
+  SUBSCRIPTIONS_DATABASE_URL: databaseUrl,
+  SUBSCRIPTIONS_ENV: "test",
+};
 
 const migration = spawnSync(python, ["-m", "alembic", "upgrade", "head"], {
   cwd: projectRoot,

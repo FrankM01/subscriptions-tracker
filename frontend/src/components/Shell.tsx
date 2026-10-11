@@ -1,8 +1,10 @@
 import { NavLink, Outlet } from "react-router-dom";
 import { formatDate, todayInLima } from "../format";
 import { Icon } from "./Icon";
+import { getAuthenticatedUserLabel, logout } from "../auth";
 
 export function Shell() {
+  const userLabel = getAuthenticatedUserLabel();
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -21,13 +23,19 @@ export function Shell() {
         </nav>
         <div className="sidebar-bottom">
           <span className="local-dot" />
-          <span><strong>Guardado localmente</strong><small>Tus datos permanecen en este equipo</small></span>
+          <span><strong>Guardado en PostgreSQL</strong><small>Persistido en tu entorno local</small></span>
         </div>
       </aside>
       <main className="main-area">
         <header className="topbar">
           <div className="mobile-brand"><span className="brand-mark"><span /></span><strong>Control Budget</strong></div>
-          <div className="topbar-date"><span className="date-indicator" />{formatDate(todayInLima())}</div>
+          <div className="topbar-actions">
+            <div className="topbar-date"><span className="date-indicator" />{formatDate(todayInLima())}</div>
+            {userLabel && <span className="account-name">{userLabel}</span>}
+            <button className="button button-quiet logout-button" type="button" onClick={() => void logout()}>
+              Cerrar sesión
+            </button>
+          </div>
         </header>
         <div className="page-content"><Outlet /></div>
       </main>

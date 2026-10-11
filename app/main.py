@@ -3,6 +3,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from app.frontend import mount_frontend
 
+from app.routers.auth import router as auth_router
 from app.routers.subscriptions import router as subscriptions_router, set_service
 from app.services.subscription_service import SubscriptionService
 from app.database import make_engine
@@ -18,6 +19,7 @@ set_service(service)
 
 app = FastAPI(title="Subscriptions Tracker", version="1.0.0")
 
+app.include_router(auth_router)
 app.include_router(subscriptions_router)
 
 # The API stays usable during development before the frontend is built.

@@ -37,6 +37,31 @@ Los scripts de inicialización de PostgreSQL se ejecutan únicamente al crear un
 volumen vacío. Si cambias nombres/usuarios de las bases luego del primer inicio,
 los valores de `.env` no recrearán ni modificarán las bases que ya existen.
 
+### Realm y usuario de prueba de Keycloak
+
+En el primer inicio, Compose importa el realm definido en
+`keycloak/realms/subscriptions-realm.json`. Incluye el cliente público
+`subscriptions-web`, Authorization Code con PKCE S256 y el audience mapper para
+`subscriptions-api`. Las URLs permitidas corresponden a la app en el puerto
+8000 y Vite en el 5173. Keycloak omite la importación si el realm ya existe;
+reiniciar el contenedor no sobrescribe los cambios hechos en la consola.
+
+En la consola de Keycloak crea un usuario normal dentro del realm `subscriptions`
+y define una contraseña para probar. La app redirige al login al abrirla. Los
+tokens viven solo en memoria del navegador; las llamadas a `/subscriptions`
+envían un access token Bearer y FastAPI valida firma RS256, expiración, issuer y
+audience con las claves públicas de Keycloak. Sin configuración OIDC la API falla
+cerrada y responde que la autenticación no está configurada.
+
+La configuración del navegador (`KEYCLOAK_PUBLIC_URL`, `KEYCLOAK_REALM` y
+`KEYCLOAK_WEB_CLIENT_ID`) se sirve desde `/auth/config`. La API usa además
+`KEYCLOAK_ISSUER_URL`, `KEYCLOAK_JWKS_URL` y `KEYCLOAK_API_AUDIENCE`. El issuer
+debe coincidir exactamente con el claim `iss` del token; la URL JWKS debe ser
+alcanzable desde el contenedor de la app. Para cambiar el realm o los IDs,
+actualiza también el archivo JSON importado. El modo de prueba de la suite usa
+una base temporal y desactiva autenticación explícitamente con
+`SUBSCRIPTIONS_ENV=test`.
+
 ## Instalación desde una copia limpia
 
 Desde la raíz del proyecto, crea el entorno e instala las dependencias de la API:

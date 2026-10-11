@@ -54,6 +54,11 @@ svg { width: 19px; height: 19px; flex: 0 0 auto; }
 .local-dot, .date-indicator { width: 8px; height: 8px; flex: 0 0 auto; margin-top: 3px; border-radius: 50%; background: #49a77d; box-shadow: 0 0 0 4px #e9f5ee; }
 .main-area { min-height: 100vh; margin-left: 250px; }
 .topbar { height: 72px; display: flex; justify-content: flex-end; align-items: center; padding: 0 clamp(24px, 5vw, 72px); border-bottom: 1px solid rgba(224, 231, 226, .78); background: rgba(255,255,255,.74); }
+.topbar-actions { display: flex; align-items: center; gap: 18px; }
+.account-name { color: #53615a; font-size: 12px; font-weight: 600; }
+.logout-button { min-height: 34px; padding: 0 11px; font-size: 11px; }
+.auth-startup { max-width: 480px; margin: 18vh auto 0; padding: 24px; color: #36433b; text-align: center; }
+.auth-startup p { margin: 12px 0 22px; color: #758079; line-height: 1.5; }
 .topbar-date { display: flex; align-items: center; gap: 10px; color: #758079; font-size: 12px; font-weight: 500; }
 .topbar-date .date-indicator { width: 7px; height: 7px; margin: 0; box-shadow: none; }
 .mobile-brand, .mobile-nav { display: none; }
@@ -258,6 +263,9 @@ svg { width: 19px; height: 19px; flex: 0 0 auto; }
   .sidebar { display: none; }
   .main-area { margin-left: 0; }
   .topbar { height: 60px; justify-content: space-between; padding: 0 19px; }
+  .topbar-actions { gap: 8px; }
+  .account-name { display: none; }
+  .logout-button { padding: 0 8px; }
   .mobile-brand { display: flex; align-items: center; gap: 9px; }
   .mobile-brand .brand-mark { width: 31px; height: 31px; border-radius: 10px; }
   .mobile-brand .brand-mark > span { transform: scale(.75); }
@@ -326,6 +334,10 @@ svg { width: 19px; height: 19px; flex: 0 0 auto; }
   .error-state { flex-wrap: wrap; }
   .error-state > div { flex-basis: calc(100% - 42px); }
   .error-state .button { margin-left: 37px; }
+}
+
+@media (max-width: 380px) {
+  .topbar-date { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -12,6 +12,7 @@
     "test:e2e": "pnpm build && node scripts/run-e2e.mjs"
   },
   "dependencies": {
+    "keycloak-js": "26.2.4",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.8.0"
