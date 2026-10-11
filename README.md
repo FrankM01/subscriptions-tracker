@@ -19,7 +19,7 @@ cd ..
 
 ## Base de datos local
 
-El proyecto usa SQLite y Alembic. Por defecto, la base se guarda en
+El proyecto usa SQLite por defecto y Alembic. También admite PostgreSQL. Por defecto, la base se guarda en
 `data/control_budget.db`, relativa a la raíz del proyecto. El directorio se crea
 automáticamente. Los archivos SQLite están excluidos de Git.
 
@@ -29,6 +29,17 @@ de SQLAlchemy. Por ejemplo:
 ```sh
 export SUBSCRIPTIONS_DATABASE_URL="sqlite:////ruta/absoluta/subscriptions.db"
 ```
+
+Para PostgreSQL utiliza el driver Psycopg 3 incluido en las dependencias:
+
+```sh
+export SUBSCRIPTIONS_DATABASE_URL="postgresql+psycopg://usuario:clave@localhost:5432/subscriptions"
+```
+
+La misma migración de Alembic crea el esquema en ambos motores. Las operaciones
+de confirmar y deshacer renovaciones conservan la serialización: SQLite toma un
+bloqueo de escritura antes de leer; PostgreSQL bloquea la fila de la suscripción
+dentro de la transacción.
 
 Desde la raíz del proyecto, crea o actualiza el esquema con:
 
@@ -45,8 +56,8 @@ Para revisar el estado aplicado:
 La migración crea `subscriptions` y `renewals`. Los importes persistidos se
 guardan en centavos enteros; las renovaciones conservan la fecha programada,
 fecha e importe pagados y una copia del calendario resultante para permitir
-validar una futura reversión. SQLite aplica las claves foráneas, incluida la
-eliminación en cascada del historial al borrar una suscripción.
+validar una futura reversión. Ambos motores aplican claves foráneas, incluida
+la eliminación en cascada del historial al borrar una suscripción.
 
 ## Respaldo y restauración
 
@@ -136,4 +147,12 @@ que existan las tablas antes de iniciar FastAPI.
 
 ```sh
 .venv/bin/python -m pytest -q
+```
+
+La integración con PostgreSQL es optativa. Usa una base dedicada para pruebas;
+el test crea y elimina un esquema temporal dentro de ella:
+
+```sh
+SUBSCRIPTIONS_TEST_POSTGRES_URL="postgresql+psycopg://usuario:clave@localhost:5432/subscriptions_test" \
+  .venv/bin/python -m pytest tests/integration -q
 ```

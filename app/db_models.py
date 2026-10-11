@@ -11,7 +11,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
-    text,
+    true,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -37,7 +37,7 @@ class SubscriptionRecord(Base):
     renewal_date: Mapped["date"] = mapped_column(Date, nullable=False)
     anchor_day: Mapped[int] = mapped_column(Integer, nullable=False)
     is_active: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=True, server_default=text("1")
+        Boolean, nullable=False, default=True, server_default=true()
     )
 
     renewals: Mapped[list["RenewalRecord"]] = relationship(

@@ -90,13 +90,18 @@ class SubscriptionRepository:
         )
 
     @contextmanager
-    def _immediate_transaction(self) -> Iterator[Connection]:
-        """Serialize SQLite read-modify-write operations before reading state."""
+    def _atomic_transaction(self) -> Iterator[Connection]:
+        """Use SQLite's write lock or a normal transaction for other engines."""
         if self._engine is None:
             raise RuntimeError("Database engine is not configured")
         connection = self._engine.connect()
         try:
-            connection.exec_driver_sql("BEGIN IMMEDIATE")
+            if self._engine.dialect.name == "sqlite":
+                # Acquire SQLite's write lock before reading to serialize renewal
+                # confirmation and undo operations.
+                connection.exec_driver_sql("BEGIN IMMEDIATE")
+            else:
+                connection.begin()
             yield connection
             connection.commit()
         except Exception:
@@ -176,11 +181,11 @@ class SubscriptionRepository:
         subscriptions = SubscriptionRecord.__table__
         renewals = RenewalRecord.__table__
 
-        with self._immediate_transaction() as connection:
+        with self._atomic_transaction() as connection:
             subscription = connection.execute(
                 select(subscriptions).where(
                     subscriptions.c.subscription_id == subscription_id
-                )
+                ).with_for_update()
             ).mappings().one_or_none()
             if subscription is None:
                 raise SubscriptionNotFoundError("Subscription not found")
@@ -209,7 +214,7 @@ class SubscriptionRepository:
                     resulting_anchor_day=subscription["anchor_day"],
                 )
             )
-            connection.execute(
+            update_result = connection.execute(
                 update(subscriptions)
                 .where(
                     subscriptions.c.subscription_id == subscription_id,
@@ -217,6 +222,8 @@ class SubscriptionRepository:
                 )
                 .values(renewal_date=next_date)
             )
+            if update_result.rowcount != 1:
+                raise RenewalConflictError("The pending renewal date has changed")
 
             renewal_id = result.inserted_primary_key[0]
             entry = RenewalEntry(
@@ -245,11 +252,11 @@ class SubscriptionRepository:
         subscriptions = SubscriptionRecord.__table__
         renewals = RenewalRecord.__table__
 
-        with self._immediate_transaction() as connection:
+        with self._atomic_transaction() as connection:
             subscription = connection.execute(
                 select(subscriptions).where(
                     subscriptions.c.subscription_id == subscription_id
-                )
+                ).with_for_update()
             ).mappings().one_or_none()
             if subscription is None:
                 raise SubscriptionNotFoundError("Subscription not found")
