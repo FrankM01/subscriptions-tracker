@@ -1,5 +1,42 @@
 # Subscriptions Tracker
 
+## Entorno local con Docker Compose
+
+Docker Compose levanta la app web, PostgreSQL y Keycloak. PostgreSQL guarda la
+app y Keycloak en bases y usuarios separados. El volumen `postgres-data`
+conserva las bases entre reinicios; los puertos se enlazan solo a `127.0.0.1`.
+Esta configuración es para aprendizaje local (`start-dev` de Keycloak), no para
+producción.
+
+Desde la raíz del proyecto, crea tu archivo local de configuración y cambia los
+valores de ejemplo por contraseñas largas. Usa valores alfanuméricos para evitar
+caracteres que deban escaparse dentro de la URL de conexión de la app:
+
+```sh
+cp .env.example .env
+```
+
+Construye e inicia los tres servicios:
+
+```sh
+docker compose up --build
+```
+
+La app aplica Alembic automáticamente al iniciar. Luego puedes abrir la app en
+`http://127.0.0.1:8000`, OpenAPI en `http://127.0.0.1:8000/docs` y Keycloak en
+`http://127.0.0.1:8081` (credenciales definidas en `.env`). Para detenerlos,
+usa `Ctrl+C` y luego `docker compose down`; esto conserva los datos. Para borrar
+también el volumen local de PostgreSQL y comenzar desde cero, ejecuta
+`docker compose down -v`.
+
+Puedes cambiar los puertos anfitrión en `.env` (`APP_HOST_PORT`,
+`POSTGRES_HOST_PORT` y `KEYCLOAK_HOST_PORT`). El archivo `.env` y los datos de
+la base no se guardan en Git.
+
+Los scripts de inicialización de PostgreSQL se ejecutan únicamente al crear un
+volumen vacío. Si cambias nombres/usuarios de las bases luego del primer inicio,
+los valores de `.env` no recrearán ni modificarán las bases que ya existen.
+
 ## Instalación desde una copia limpia
 
 Desde la raíz del proyecto, crea el entorno e instala las dependencias de la API:
