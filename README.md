@@ -81,9 +81,10 @@ cd ..
 
 ## Base de datos local
 
-El proyecto usa SQLite por defecto y Alembic. También admite PostgreSQL. Por defecto, la base se guarda en
-`data/control_budget.db`, relativa a la raíz del proyecto. El directorio se crea
-automáticamente. Los archivos SQLite están excluidos de Git.
+El proyecto usa SQLite por defecto y Alembic. También admite PostgreSQL. Por
+defecto, la base se guarda en `data/control_budget.db`, relativa a la raíz del
+proyecto. El directorio se crea automáticamente. Los archivos SQLite están
+excluidos de Git.
 
 Para elegir otra ubicación, configura `SUBSCRIPTIONS_DATABASE_URL` con una URL
 de SQLAlchemy. Por ejemplo:
@@ -235,3 +236,23 @@ el test crea y elimina un esquema temporal dentro de ella:
 SUBSCRIPTIONS_TEST_POSTGRES_URL="postgresql+psycopg://usuario:clave@localhost:5432/subscriptions_test" \
   .venv/bin/python -m pytest tests/integration -q
 ```
+
+## Criterios de aceptación del Sprint 5
+
+- `docker compose up --build` inicia la app, PostgreSQL y Keycloak; Alembic
+  deja el esquema al día y los datos sobreviven a reinicios del stack.
+- Un usuario del realm `subscriptions` puede iniciar y cerrar sesión desde la
+  app. Las rutas de suscripciones requieren un access token válido; solicitudes
+  sin token o con token inválido reciben HTTP 401.
+- Las pruebas de integración PostgreSQL verifican migración, renovación y el
+  flujo autenticado de crear, listar, actualizar, registrar una renovación y
+  eliminar suscripciones. Se ejecutan en un esquema temporal que se elimina al
+  finalizar; usa una base dedicada de pruebas, como indica la sección anterior.
+- La migración desde SQLite pasa primero por `--dry-run`, importa a una base
+  PostgreSQL vacía y conserva suscripciones e historial. El archivo SQLite y
+  el respaldo permanecen intactos.
+
+El login y logout con un usuario local de Keycloak se probaron manualmente. La
+suite optativa de integración PostgreSQL terminó con 4 pruebas aprobadas; la
+suite general sin URL de pruebas PostgreSQL terminó con 140 aprobadas y 3
+omitidas.
