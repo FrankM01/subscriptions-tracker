@@ -28,7 +28,7 @@ def upgrade() -> None:
     sa.Column('billing_cycle', sa.String(length=10), nullable=False),
     sa.Column('renewal_date', sa.Date(), nullable=False),
     sa.Column('anchor_day', sa.Integer(), nullable=False),
-    sa.Column('is_active', sa.Boolean(), server_default=sa.text('1'), nullable=False),
+    sa.Column('is_active', sa.Boolean(), server_default=sa.true(), nullable=False),
     sa.CheckConstraint("billing_cycle IN ('monthly', 'yearly')", name='ck_subscriptions_billing_cycle'),
     sa.CheckConstraint('anchor_day BETWEEN 1 AND 31', name='ck_subscriptions_anchor_day'),
     sa.CheckConstraint('cost_cents > 0', name='ck_subscriptions_cost_positive'),

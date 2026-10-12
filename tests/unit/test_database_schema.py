@@ -1,11 +1,13 @@
 import pytest
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import inspect, text
+from sqlalchemy import inspect, select, text
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.exc import IntegrityError
 
 from app.database import Base, DEFAULT_DATABASE_PATH, get_database_url, make_engine
 from app import db_models  # noqa: F401 - register schema metadata
+from app.db_models import SubscriptionRecord
 
 
 PROJECT_ROOT = DEFAULT_DATABASE_PATH.parent.parent
@@ -88,3 +90,13 @@ def test_sqlite_enforces_checks_foreign_keys_and_cascade(tmp_path):
         assert connection.scalar(text("SELECT count(*) FROM renewals")) == 0
 
     engine.dispose()
+
+
+def test_renewal_lock_statement_compiles_for_postgresql():
+    statement = (
+        select(SubscriptionRecord.__table__)
+        .where(SubscriptionRecord.subscription_id == "sub-1")
+        .with_for_update()
+    )
+
+    assert "FOR UPDATE" in str(statement.compile(dialect=postgresql.dialect()))

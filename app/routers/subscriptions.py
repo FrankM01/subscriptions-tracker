@@ -1,7 +1,8 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Response, status
+from fastapi import APIRouter, Depends, Response, status
 
+from app.auth import get_current_user
 from app.models.subscription import (
     ErrorResponse,
     RenewalAlert,
@@ -14,7 +15,11 @@ from app.models.subscription import (
 )
 from app.services.subscription_service import SubscriptionService
 
-router = APIRouter(prefix="/subscriptions", tags=["subscriptions"])
+router = APIRouter(
+    prefix="/subscriptions",
+    tags=["subscriptions"],
+    dependencies=[Depends(get_current_user)],
+)
 
 _service: SubscriptionService = None
 

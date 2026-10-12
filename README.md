@@ -1,5 +1,67 @@
 # Subscriptions Tracker
 
+## Entorno local con Docker Compose
+
+Docker Compose levanta la app web, PostgreSQL y Keycloak. PostgreSQL guarda la
+app y Keycloak en bases y usuarios separados. El volumen `postgres-data`
+conserva las bases entre reinicios; los puertos se enlazan solo a `127.0.0.1`.
+Esta configuración es para aprendizaje local (`start-dev` de Keycloak), no para
+producción.
+
+Desde la raíz del proyecto, crea tu archivo local de configuración y cambia los
+valores de ejemplo por contraseñas largas. Usa valores alfanuméricos para evitar
+caracteres que deban escaparse dentro de la URL de conexión de la app:
+
+```sh
+cp .env.example .env
+```
+
+Construye e inicia los tres servicios:
+
+```sh
+docker compose up --build
+```
+
+La app aplica Alembic automáticamente al iniciar. Luego puedes abrir la app en
+`http://127.0.0.1:8000`, OpenAPI en `http://127.0.0.1:8000/docs` y Keycloak en
+`http://127.0.0.1:8081` (credenciales definidas en `.env`). Para detenerlos,
+usa `Ctrl+C` y luego `docker compose down`; esto conserva los datos. Para borrar
+también el volumen local de PostgreSQL y comenzar desde cero, ejecuta
+`docker compose down -v`.
+
+Puedes cambiar los puertos anfitrión en `.env` (`APP_HOST_PORT`,
+`POSTGRES_HOST_PORT` y `KEYCLOAK_HOST_PORT`). El archivo `.env` y los datos de
+la base no se guardan en Git.
+
+Los scripts de inicialización de PostgreSQL se ejecutan únicamente al crear un
+volumen vacío. Si cambias nombres/usuarios de las bases luego del primer inicio,
+los valores de `.env` no recrearán ni modificarán las bases que ya existen.
+
+### Realm y usuario de prueba de Keycloak
+
+En el primer inicio, Compose importa el realm definido en
+`keycloak/realms/subscriptions-realm.json`. Incluye el cliente público
+`subscriptions-web`, Authorization Code con PKCE S256 y el audience mapper para
+`subscriptions-api`. Las URLs permitidas corresponden a la app en el puerto
+8000 y Vite en el 5173. Keycloak omite la importación si el realm ya existe;
+reiniciar el contenedor no sobrescribe los cambios hechos en la consola.
+
+En la consola de Keycloak crea un usuario normal dentro del realm `subscriptions`
+y define una contraseña para probar. La app redirige al login al abrirla. Los
+tokens viven solo en memoria del navegador; las llamadas a `/subscriptions`
+envían un access token Bearer y FastAPI valida firma RS256, expiración, issuer y
+audience con las claves públicas de Keycloak. Sin configuración OIDC la API falla
+cerrada y responde que la autenticación no está configurada.
+
+La configuración del navegador (`KEYCLOAK_PUBLIC_URL`, `KEYCLOAK_REALM` y
+`KEYCLOAK_WEB_CLIENT_ID`) se sirve desde `/auth/config`. La API usa además
+`KEYCLOAK_ISSUER_URL`, `KEYCLOAK_JWKS_URL` y `KEYCLOAK_API_AUDIENCE`. El issuer
+debe coincidir exactamente con el claim `iss` del token; la URL JWKS debe ser
+alcanzable desde el contenedor de la app. Para cambiar el realm o los IDs,
+actualiza también el archivo JSON importado. El modo de prueba de la suite usa
+una base temporal y desactiva autenticación explícitamente con
+`SUBSCRIPTIONS_ENV=test`.
+
 ## Instalación desde una copia limpia
 
 Desde la raíz del proyecto, crea el entorno e instala las dependencias de la API:
@@ -19,9 +81,10 @@ cd ..
 
 ## Base de datos local
 
-El proyecto usa SQLite y Alembic. Por defecto, la base se guarda en
-`data/control_budget.db`, relativa a la raíz del proyecto. El directorio se crea
-automáticamente. Los archivos SQLite están excluidos de Git.
+El proyecto usa SQLite por defecto y Alembic. También admite PostgreSQL. Por
+defecto, la base se guarda en `data/control_budget.db`, relativa a la raíz del
+proyecto. El directorio se crea automáticamente. Los archivos SQLite están
+excluidos de Git.
 
 Para elegir otra ubicación, configura `SUBSCRIPTIONS_DATABASE_URL` con una URL
 de SQLAlchemy. Por ejemplo:
@@ -29,6 +92,34 @@ de SQLAlchemy. Por ejemplo:
 ```sh
 export SUBSCRIPTIONS_DATABASE_URL="sqlite:////ruta/absoluta/subscriptions.db"
 ```
+
+Para PostgreSQL utiliza el driver Psycopg 3 incluido en las dependencias:
+
+```sh
+export SUBSCRIPTIONS_DATABASE_URL="postgresql+psycopg://usuario:clave@localhost:5432/subscriptions"
+```
+
+La misma migración de Alembic crea el esquema en ambos motores. Las operaciones
+de confirmar y deshacer renovaciones conservan la serialización: SQLite toma un
+bloqueo de escritura antes de leer; PostgreSQL bloquea la fila de la suscripción
+dentro de la transacción.
+
+## Migrar los datos locales a PostgreSQL
+
+Detén la aplicación y crea primero una copia verificada de SQLite con el comando
+de respaldo de abajo. Configura `SUBSCRIPTIONS_DATABASE_URL` para apuntar a una
+base PostgreSQL vacía. Aplica el esquema y ejecuta primero la prevalidación:
+
+```sh
+.venv/bin/python -m alembic upgrade head
+.venv/bin/python -m scripts.migrate_sqlite_to_postgres --source /ruta/subscriptions-backup.db --dry-run
+```
+
+Si los conteos son correctos, repite el comando sin `--dry-run` para importar.
+La herramienta exige un destino vacío y actualizado, conserva IDs, importes,
+fechas e historial, y sincroniza la secuencia de renovaciones. Si la importación
+falla, revierte todos los cambios del destino; el archivo SQLite queda intacto.
+Después puedes iniciar la app usando la URL de PostgreSQL.
 
 Desde la raíz del proyecto, crea o actualiza el esquema con:
 
@@ -45,8 +136,8 @@ Para revisar el estado aplicado:
 La migración crea `subscriptions` y `renewals`. Los importes persistidos se
 guardan en centavos enteros; las renovaciones conservan la fecha programada,
 fecha e importe pagados y una copia del calendario resultante para permitir
-validar una futura reversión. SQLite aplica las claves foráneas, incluida la
-eliminación en cascada del historial al borrar una suscripción.
+validar una futura reversión. Ambos motores aplican claves foráneas, incluida
+la eliminación en cascada del historial al borrar una suscripción.
 
 ## Respaldo y restauración
 
@@ -137,3 +228,31 @@ que existan las tablas antes de iniciar FastAPI.
 ```sh
 .venv/bin/python -m pytest -q
 ```
+
+La integración con PostgreSQL es optativa. Usa una base dedicada para pruebas;
+el test crea y elimina un esquema temporal dentro de ella:
+
+```sh
+SUBSCRIPTIONS_TEST_POSTGRES_URL="postgresql+psycopg://usuario:clave@localhost:5432/subscriptions_test" \
+  .venv/bin/python -m pytest tests/integration -q
+```
+
+## Criterios de aceptación del Sprint 5
+
+- `docker compose up --build` inicia la app, PostgreSQL y Keycloak; Alembic
+  deja el esquema al día y los datos sobreviven a reinicios del stack.
+- Un usuario del realm `subscriptions` puede iniciar y cerrar sesión desde la
+  app. Las rutas de suscripciones requieren un access token válido; solicitudes
+  sin token o con token inválido reciben HTTP 401.
+- Las pruebas de integración PostgreSQL verifican migración, renovación y el
+  flujo autenticado de crear, listar, actualizar, registrar una renovación y
+  eliminar suscripciones. Se ejecutan en un esquema temporal que se elimina al
+  finalizar; usa una base dedicada de pruebas, como indica la sección anterior.
+- La migración desde SQLite pasa primero por `--dry-run`, importa a una base
+  PostgreSQL vacía y conserva suscripciones e historial. El archivo SQLite y
+  el respaldo permanecen intactos.
+
+El login y logout con un usuario local de Keycloak se probaron manualmente. La
+suite optativa de integración PostgreSQL terminó con 4 pruebas aprobadas; la
+suite general sin URL de pruebas PostgreSQL terminó con 140 aprobadas y 3
+omitidas.
