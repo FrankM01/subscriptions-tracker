@@ -1,4 +1,83 @@
-# Subscriptions Tracker
+# Subscription Tracker
+
+Una aplicación web para organizar suscripciones, consultar el gasto mensual
+estimado y mantener a la vista los próximos cobros y su historial de renovaciones.
+
+![Resumen de Subscription Tracker con gasto mensual y próximos cobros ficticios](docs/images/resumen.png)
+
+> Las capturas utilizan servicios, importes y fechas ficticios. El proyecto incluye
+> un laboratorio personal en AWS con acceso restringido; no hay una demo pública.
+
+## Funcionalidades
+
+- Crear, editar, activar, desactivar y eliminar suscripciones mensuales o anuales.
+- Consultar el gasto mensual estimado y los cobros próximos o vencidos.
+- Registrar renovaciones y consultar su historial desde el detalle de cada servicio.
+- Iniciar y cerrar sesión con Keycloak; la API protege sus rutas con tokens OIDC.
+- Persistir datos en SQLite o PostgreSQL y administrar el esquema con Alembic.
+
+<details>
+<summary>Ver la lista de suscripciones</summary>
+
+![Lista de tres suscripciones ficticias con precios y fechas de cobro](docs/images/suscripciones.png)
+
+</details>
+
+## Tecnologías y arquitectura
+
+| Área | Tecnologías |
+| --- | --- |
+| Interfaz | React, TypeScript, Vite |
+| API | Python, FastAPI, SQLAlchemy |
+| Datos | PostgreSQL, SQLite, Alembic |
+| Identidad | Keycloak, OpenID Connect, Authorization Code con PKCE |
+| Infraestructura | Docker Compose; laboratorio personal con AWS ECS/Fargate, RDS, ALB y ECR |
+| Pruebas | pytest, Vitest, Playwright |
+
+En local, Docker Compose inicia la aplicación, Keycloak y PostgreSQL. La aplicación
+y Keycloak utilizan bases y usuarios separados. La API valida los tokens emitidos
+por Keycloak y Alembic aplica las migraciones de la aplicación al arrancar.
+
+```text
+Navegador → React + TypeScript → FastAPI → PostgreSQL (aplicación)
+                    │               ↑
+                    └→ Keycloak ────┘
+                           └──────────→ PostgreSQL (identidad)
+```
+
+El despliegue en AWS es un **entorno personal de aprendizaje**, con acceso
+restringido por IP y autenticación. La configuración y herramientas específicas
+de ese laboratorio están en esta rama; no se presentan como una demo pública.
+
+## Inicio rápido
+
+**Requisitos:** Docker y Docker Compose.
+
+1. Crea el archivo de configuración y reemplaza las contraseñas de ejemplo:
+
+   ```sh
+   cp .env.example .env
+   ```
+
+2. Construye e inicia los servicios:
+
+   ```sh
+   docker compose up --build -d
+   ```
+
+3. Abre la consola de Keycloak en [127.0.0.1:8081](http://127.0.0.1:8081)
+   con el administrador definido en `.env`. En el realm `subscriptions`, crea
+   un usuario normal y asígnale una contraseña en **Credentials**.
+4. Abre la aplicación en [127.0.0.1:8000](http://127.0.0.1:8000) e inicia
+   sesión con ese usuario. La documentación de la API está en
+   [127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
+
+Usa `127.0.0.1` en lugar de `localhost`: el realm local permite las redirecciones
+para ese origen. Para detener los servicios conservando los datos, ejecuta
+`docker compose down`. Los detalles de configuración, pruebas y operación siguen
+más abajo.
+
+## Documentación técnica
 
 ## Entorno local con Docker Compose
 
@@ -291,23 +370,3 @@ el test crea y elimina un esquema temporal dentro de ella:
 SUBSCRIPTIONS_TEST_POSTGRES_URL="postgresql+psycopg://usuario:clave@localhost:5432/subscriptions_test" \
   .venv/bin/python -m pytest tests/integration -q
 ```
-
-## Criterios de aceptación del Sprint 5
-
-- `docker compose up --build` inicia la app, PostgreSQL y Keycloak; Alembic
-  deja el esquema al día y los datos sobreviven a reinicios del stack.
-- Un usuario del realm `subscriptions` puede iniciar y cerrar sesión desde la
-  app. Las rutas de suscripciones requieren un access token válido; solicitudes
-  sin token o con token inválido reciben HTTP 401.
-- Las pruebas de integración PostgreSQL verifican migración, renovación y el
-  flujo autenticado de crear, listar, actualizar, registrar una renovación y
-  eliminar suscripciones. Se ejecutan en un esquema temporal que se elimina al
-  finalizar; usa una base dedicada de pruebas, como indica la sección anterior.
-- La migración desde SQLite pasa primero por `--dry-run`, importa a una base
-  PostgreSQL vacía y conserva suscripciones e historial. El archivo SQLite y
-  el respaldo permanecen intactos.
-
-El login y logout con un usuario local de Keycloak se probaron manualmente. La
-suite optativa de integración PostgreSQL terminó con 4 pruebas aprobadas; la
-suite general sin URL de pruebas PostgreSQL terminó con 140 aprobadas y 3
-omitidas.
