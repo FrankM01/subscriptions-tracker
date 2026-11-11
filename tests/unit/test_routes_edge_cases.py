@@ -17,10 +17,10 @@ from datetime import date, timedelta
 import pytest
 from fastapi.testclient import TestClient
 
-from app.main import app, store
+from app.main import app
 from app.routers.subscriptions import set_service
 from app.services.subscription_service import SubscriptionService
-from app.store.subscription_store import SubscriptionStore
+from tests.helpers import temporary_repository
 
 
 # ---------------------------------------------------------------------------
@@ -28,12 +28,11 @@ from app.store.subscription_store import SubscriptionStore
 # ---------------------------------------------------------------------------
 
 @pytest.fixture(autouse=True)
-def reset_store():
-    """Reset the shared store before each test to ensure isolation."""
-    store._store = {}
-    set_service(SubscriptionService(store))
-    yield
-    store._store = {}
+def configure_repository():
+    """Give each route test an isolated in-memory SQLite database."""
+    with temporary_repository() as repository:
+        set_service(SubscriptionService(repository))
+        yield repository
 
 
 @pytest.fixture()
@@ -76,6 +75,13 @@ def test_post_missing_renewal_date_returns_422(client):
     """Requirement 1.8 — renewal_date is required."""
     payload = _valid_payload()
     del payload["renewal_date"]
+    response = client.post("/subscriptions", json=payload)
+    assert response.status_code == 422
+
+
+def test_post_blank_name_returns_422(client):
+    payload = _valid_payload()
+    payload["name"] = "   "
     response = client.post("/subscriptions", json=payload)
     assert response.status_code == 422
 
@@ -133,6 +139,35 @@ def test_put_empty_body_returns_422(client):
     assert response.status_code == 422
 
 
+def test_put_only_null_fields_returns_422(client):
+    created = client.post("/subscriptions", json=_valid_payload())
+    assert created.status_code == 201
+    subscription_id = created.json()["subscription_id"]
+
+    response = client.put(f"/subscriptions/{subscription_id}", json={"name": None})
+    assert response.status_code == 422
+
+
+def test_put_reactivation_requires_reviewed_renewal_date(client):
+    payload = {**_valid_payload(), "is_active": False}
+    created = client.post("/subscriptions", json=payload)
+    assert created.status_code == 201
+    subscription_id = created.json()["subscription_id"]
+
+    without_review = client.put(
+        f"/subscriptions/{subscription_id}", json={"is_active": True}
+    )
+    assert without_review.status_code == 422
+
+    reviewed_date = (date.today() + timedelta(days=45)).isoformat()
+    with_review = client.put(
+        f"/subscriptions/{subscription_id}",
+        json={"is_active": True, "renewal_date": reviewed_date},
+    )
+    assert with_review.status_code == 200
+    assert with_review.json()["renewal_date"] == reviewed_date
+
+
 # ---------------------------------------------------------------------------
 # 6. GET /subscriptions/alerts — no subscriptions in window → []
 # ---------------------------------------------------------------------------
@@ -160,12 +195,8 @@ def test_get_alerts_subscription_outside_window_returns_empty_list(client):
 # 7. Store unavailable → 500
 # ---------------------------------------------------------------------------
 
-def test_get_subscriptions_store_unavailable_returns_500(client):
-    """Requirements 5.5, 6.9 — when the store is unavailable, the API returns 500."""
-    original = store._store
-    try:
-        store._store = None
-        response = client.get("/subscriptions")
-        assert response.status_code == 500
-    finally:
-        store._store = original
+def test_get_subscriptions_database_unavailable_returns_500(client, configure_repository):
+    """When the database engine is unavailable, the API returns 500."""
+    configure_repository._engine = None
+    response = client.get("/subscriptions")
+    assert response.status_code == 500

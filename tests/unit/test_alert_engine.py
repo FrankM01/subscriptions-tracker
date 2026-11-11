@@ -130,8 +130,8 @@ def test_evaluate_yearly_subscription_outside_window_is_excluded():
     assert len(alerts) == 0
 
 
-def test_evaluate_subscription_with_past_renewal_date_is_excluded():
-    """Req 6.3 — sub with past renewal_date (days < 0) is not included."""
+def test_evaluate_subscription_with_past_renewal_date_is_included():
+    """Overdue active subscriptions remain visible until confirmed or corrected."""
     sub = make_subscription(
         billing_cycle=BillingCycle.monthly,
         renewal_date=TODAY - timedelta(days=1),
@@ -140,7 +140,8 @@ def test_evaluate_subscription_with_past_renewal_date_is_excluded():
 
     alerts = AlertEngine.evaluate([sub], TODAY)
 
-    assert len(alerts) == 0
+    assert len(alerts) == 1
+    assert alerts[0].days_until_renewal == -1
 
 
 # ---------------------------------------------------------------------------

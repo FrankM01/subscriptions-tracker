@@ -2,6 +2,11 @@
 .venv/
 venv/
 
+# Configuración local y secretos de Docker Compose
+.env
+.env.*
+!.env.example
+
 # Python y pruebas
 __pycache__/
 *.py[cod]
@@ -20,3 +25,10 @@ htmlcov/
 
 # macOS
 .DS_Store
+
+# Frontend dependencies and compiled assets
+frontend/node_modules/
+frontend/dist/
+frontend/playwright-report/
+frontend/test-results/
+.playwright-cli/

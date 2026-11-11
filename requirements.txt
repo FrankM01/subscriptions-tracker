@@ -7,3 +7,6 @@ hypothesis==6.155.3
 pytest-cov==7.1.0
 SQLAlchemy==2.1.4
 alembic==1.20.0
+psycopg[binary]==3.3.6
+
+PyJWT[crypto]==2.15.1

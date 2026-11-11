@@ -18,10 +18,12 @@ class AlertEngine:
     def evaluate(subscriptions: list[Subscription], today: date) -> list[RenewalAlert]:
         """
         Evaluate active subscriptions and return those within their alert window,
-        sorted ascending by days_until_renewal (soonest first).
+        sorted ascending by days_until_renewal (oldest overdue first, then
+        soonest upcoming).
 
         Includes a subscription if:
           - is_active is True
+          - days_until_renewal < 0 (overdue, remains pending indefinitely), or
           - 0 <= days_until_renewal <= ALERT_WINDOW[billing_cycle]
         """
         alerts = []
@@ -30,7 +32,7 @@ class AlertEngine:
                 continue
             days = AlertEngine.days_until_renewal(sub.renewal_date, today)
             window = ALERT_WINDOW[sub.billing_cycle]
-            if 0 <= days <= window:
+            if days <= window:
                 alerts.append(
                     RenewalAlert(
                         subscription_id=sub.subscription_id,

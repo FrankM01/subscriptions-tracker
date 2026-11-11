@@ -1,4 +1,4 @@
-# Feature: subscriptions-tracker, Property 10: Las alertas retornadas contienen exactamente las suscripciones activas dentro de la ventana correspondiente
+# Feature: subscriptions-tracker, Property 10: Las alertas retornadas contienen suscripciones activas vencidas o dentro de su ventana
 # Validates: Requirements 6.1, 6.3, 6.4, 6.7
 
 from datetime import date
@@ -42,6 +42,7 @@ def test_alerts_contain_correct_subscriptions(today: date, subscriptions: list[S
     Property 10: For any list of subscriptions and any reference date `today`,
     AlertEngine.evaluate() must return exactly those subscriptions that are:
       - active (is_active == True)
+      - overdue (days_until_renewal < 0), or
       - within the alert window for their billing cycle:
           * monthly: 0 <= days_until_renewal <= 7
           * yearly:  0 <= days_until_renewal <= 30
@@ -53,7 +54,7 @@ def test_alerts_contain_correct_subscriptions(today: date, subscriptions: list[S
             continue
         days = (sub.renewal_date - today).days
         window = ALERT_WINDOW[sub.billing_cycle]
-        if 0 <= days <= window:
+        if days < 0 or days <= window:
             expected_ids.add(sub.subscription_id)
 
     alerts = AlertEngine.evaluate(subscriptions, today)

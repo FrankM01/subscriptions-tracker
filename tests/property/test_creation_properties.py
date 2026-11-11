@@ -104,7 +104,7 @@ def test_past_or_today_renewal_date_rejected_on_update(renewal_date):
 import uuid
 
 from app.services.subscription_service import SubscriptionService
-from app.store.subscription_store import SubscriptionStore
+from tests.helpers import temporary_repository, valid_name_strategy
 
 valid_cost = st.decimals(min_value=Decimal("0.01"), max_value=Decimal("9999.99"), places=2).filter(
     lambda x: not x.is_nan() and not x.is_infinite()
@@ -113,7 +113,7 @@ billing_cycle_strategy = st.sampled_from(["monthly", "yearly"])
 future_date = st.dates(min_value=date.today() + timedelta(days=1), max_value=date(2030, 12, 31))
 
 valid_subscription_strategy = st.fixed_dictionaries({
-    "name": st.text(min_size=1, max_size=100),
+    "name": valid_name_strategy(),
     "cost": valid_cost,
     "billing_cycle": billing_cycle_strategy,
     "renewal_date": future_date.map(lambda d: d.isoformat()),
@@ -125,13 +125,13 @@ valid_subscription_strategy = st.fixed_dictionaries({
 @given(payloads=st.lists(valid_subscription_strategy, min_size=2, max_size=20))
 def test_created_ids_are_unique_uuids(payloads):
     """Property 1: All subscription_id values assigned are valid UUID v4 and unique."""
-    store = SubscriptionStore()
-    service = SubscriptionService(store=store)
+    with temporary_repository() as repository:
+        service = SubscriptionService(repository=repository)
 
-    ids = []
-    for payload in payloads:
-        sub = service.create(SubscriptionCreate(**payload))
-        ids.append(sub.subscription_id)
+        ids = []
+        for payload in payloads:
+            sub = service.create(SubscriptionCreate(**payload))
+            ids.append(sub.subscription_id)
 
     # Assert all IDs are valid UUID v4
     for sub_id in ids:
@@ -146,7 +146,7 @@ def test_created_ids_are_unique_uuids(payloads):
 # Validates: Requirements 1.7
 
 valid_subscription_with_explicit_is_active = st.fixed_dictionaries({
-    "name": st.text(min_size=1, max_size=100),
+    "name": valid_name_strategy(),
     "cost": valid_cost,
     "billing_cycle": billing_cycle_strategy,
     "renewal_date": future_date.map(lambda d: d.isoformat()),
@@ -158,10 +158,9 @@ valid_subscription_with_explicit_is_active = st.fixed_dictionaries({
 @given(payload=valid_subscription_with_explicit_is_active)
 def test_is_active_not_overwritten(payload):
     """Property 2: is_active provided explicitly is never overwritten by the default value True."""
-    store = SubscriptionStore()
-    service = SubscriptionService(store=store)
-
-    subscription = service.create(SubscriptionCreate(**payload))
+    with temporary_repository() as repository:
+        service = SubscriptionService(repository=repository)
+        subscription = service.create(SubscriptionCreate(**payload))
 
     assert subscription.is_active == payload["is_active"], (
         f"Expected is_active={payload['is_active']!r} but got {subscription.is_active!r}"

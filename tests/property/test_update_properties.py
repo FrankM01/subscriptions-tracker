@@ -9,7 +9,7 @@ from hypothesis import strategies as st
 
 from app.models.subscription import BillingCycle, SubscriptionCreate, SubscriptionUpdate
 from app.services.subscription_service import SubscriptionService
-from app.store.subscription_store import SubscriptionStore
+from tests.helpers import temporary_repository, valid_name_strategy
 
 
 # ---------------------------------------------------------------------------
@@ -30,7 +30,7 @@ future_date = st.dates(
 )
 
 valid_subscription_strategy = st.fixed_dictionaries({
-    "name": st.text(min_size=1, max_size=100),
+    "name": valid_name_strategy(),
     "cost": valid_cost,
     "billing_cycle": billing_cycle_strategy,
     "renewal_date": future_date.map(lambda d: d.isoformat()),
@@ -42,7 +42,7 @@ UPDATABLE_FIELDS = ["name", "cost", "billing_cycle", "renewal_date", "is_active"
 
 # Per-field update value strategies (valid values only)
 _field_value_strategies = {
-    "name": st.text(min_size=1, max_size=100),
+    "name": valid_name_strategy(),
     "cost": valid_cost,
     "billing_cycle": billing_cycle_strategy,
     "renewal_date": future_date.map(lambda d: d.isoformat()),
@@ -72,6 +72,8 @@ def original_and_update(draw):
 
     # Draw new values for the chosen fields
     update = draw(st.fixed_dictionaries({f: _field_value_strategies[f] for f in fields}))
+    if original["is_active"] is False and update.get("is_active") is True:
+        update["renewal_date"] = draw(_field_value_strategies["renewal_date"])
 
     return original, update
 
@@ -90,20 +92,20 @@ def test_put_updates_only_provided_fields(data):
     original_payload, update_dict = data
 
     # Fresh isolated store + service per hypothesis example
-    store = SubscriptionStore()
-    service = SubscriptionService(store=store)
+    with temporary_repository() as repository:
+        service = SubscriptionService(repository=repository)
 
-    # Step 1: Create the subscription and capture original field values
-    subscription = service.create(SubscriptionCreate(**original_payload))
-    original = subscription.model_dump()
-    subscription_id = str(subscription.subscription_id)
+        # Step 1: Create the subscription and capture original field values
+        subscription = service.create(SubscriptionCreate(**original_payload))
+        original = subscription.model_dump()
+        subscription_id = str(subscription.subscription_id)
 
-    # Step 2: Build SubscriptionUpdate with only the chosen fields
-    update = SubscriptionUpdate(**update_dict)
+        # Step 2: Build SubscriptionUpdate with only the chosen fields
+        update = SubscriptionUpdate(**update_dict)
 
-    # Step 3: Perform the update via the service
-    updated = service.update(subscription_id, update)
-    result = updated.model_dump()
+        # Step 3: Perform the update via the service
+        updated = service.update(subscription_id, update)
+        result = updated.model_dump()
 
     # Normalise update_dict values for comparison (cost stays Decimal, billing_cycle as str)
     normalised_update: dict = {}
