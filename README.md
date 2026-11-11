@@ -62,6 +62,61 @@ actualiza también el archivo JSON importado. El modo de prueba de la suite usa
 una base temporal y desactiva autenticación explícitamente con
 `SUBSCRIPTIONS_ENV=test`.
 
+### Preparación de Keycloak para el laboratorio AWS
+
+La imagen para el laboratorio tiene una configuración separada de Compose
+local: usa arranque optimizado, PostgreSQL y health checks, e incluye un realm
+cuyas URLs se obtienen de variables de entorno. La estimación de Fargate usa
+`linux/amd64`; para construir la imagen para esa arquitectura desde la raíz del
+proyecto:
+
+```sh
+docker build --platform linux/amd64 -f keycloak/aws/Dockerfile -t subscriptions-keycloak-aws:local .
+```
+
+En la definición de tarea de ECS deben configurarse al menos:
+
+- `KC_DB_URL_HOST`, `KC_DB_URL_DATABASE`, `KC_DB_USERNAME` y `KC_DB_PASSWORD`:
+  conexión a la base de Keycloak. La contraseña debe suministrarse como secreto.
+- `KC_HOSTNAME`: URL HTTPS pública de Keycloak, por ejemplo `https://auth.example.com`.
+- `KC_HTTP_ENABLED=true` y `KC_PROXY_HEADERS=xforwarded` para terminación TLS en
+  el ALB. Permite conexiones a Keycloak solo desde el balanceador y configura
+  las direcciones de proxy de confianza apropiadas para la red.
+- `KC_BOOTSTRAP_ADMIN_USERNAME` y `KC_BOOTSTRAP_ADMIN_PASSWORD`: credenciales de
+  administración inicial suministradas de forma segura.
+- `KEYCLOAK_REALM`, `KEYCLOAK_WEB_CLIENT_ID`, `KEYCLOAK_API_AUDIENCE` y
+  `KEYCLOAK_APP_ORIGIN`: valores del realm y origen HTTPS de la aplicación, por
+  ejemplo `https://app.example.com`, sin barra final ni rutas.
+
+El cliente acepta redirecciones dentro del origen configurado porque el frontend
+conserva la URL actual al iniciar sesión; el retorno de logout usa ese origen.
+El realm se importa únicamente si aún no existe: cambiar estas variables no
+actualiza un realm ya importado. La API debe validar el issuer público exacto y
+poder alcanzar el endpoint JWKS. El health check `/health/ready` escucha en el
+puerto de gestión 9000; mantenlo accesible solo por la red necesaria para el
+balanceador o la comprobación interna.
+
+La imagen `linux/amd64` se desplegó en ECS y se verificaron HTTPS, conexión a
+PostgreSQL, login y logout. El servicio es un laboratorio de uso personal;
+siguen pendientes mejoras de operación y de verificación del certificado de RDS.
+
+La aplicación también acepta `SUBSCRIPTIONS_DB_HOST`, `SUBSCRIPTIONS_DB_USER` y
+`SUBSCRIPTIONS_DB_PASSWORD` para recibir credenciales separadas de Secrets Manager.
+Usa PostgreSQL mediante TLS con `sslmode=require`: esta opción cifra la conexión,
+pero no verifica la identidad del servidor. `SUBSCRIPTIONS_DATABASE_URL` tiene
+prioridad sobre estas variables.
+
+Para verificar una copia cifrada previamente descargada, usa un directorio con la
+llave y certificado, y otro con `subscriptions.dump.p7m` y `keycloak.dump.p7m`:
+
+```sh
+bash scripts/verify-encrypted-backup.sh ../backups ../backups/2026-11-10
+```
+
+El comando pide la contraseña de la llave en la terminal y restaura las copias en
+un contenedor PostgreSQL temporal sin red. Conserva la llave privada protegida y
+su contraseña: ambas son necesarias para recuperar los datos.
+
 ## Instalación desde una copia limpia
 
 Desde la raíz del proyecto, crea el entorno e instala las dependencias de la API:

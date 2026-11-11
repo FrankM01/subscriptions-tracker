@@ -1,0 +1,3 @@
+FROM subscriptions-app:aws-rds
+COPY tests/integration/test_sqlite_to_postgres_migration.py /app/tests/integration/test_sqlite_to_postgres_migration.py
+CMD ["python", "-c", "import os; from app.database import get_database_url; os.environ['SUBSCRIPTIONS_TEST_POSTGRES_URL'] = get_database_url(); import pytest; raise SystemExit(pytest.main(['-q', 'tests/integration/test_sqlite_to_postgres_migration.py']))"]
