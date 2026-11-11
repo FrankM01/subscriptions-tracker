@@ -1,5 +1,5 @@
 # Build the React/Vite frontend using the committed pnpm lockfile.
-FROM node:24-bookworm-slim AS frontend-build
+FROM --platform=$BUILDPLATFORM node:24-bookworm-slim AS frontend-build
 WORKDIR /frontend
 RUN corepack enable
 RUN corepack prepare pnpm@12.11.2 --activate
@@ -18,6 +18,7 @@ RUN python -m pip install --no-cache-dir -r requirements.txt
 COPY app ./app
 COPY migrations ./migrations
 COPY alembic.ini ./alembic.ini
+COPY scripts/aws-init-databases.py ./scripts/aws-init-databases.py
 COPY --from=frontend-build /frontend/dist ./frontend/dist
 RUN useradd --create-home --uid 10001 appuser \
     && chown -R appuser:appuser /app

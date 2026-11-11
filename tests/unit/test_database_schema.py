@@ -3,6 +3,7 @@ from alembic import command
 from alembic.config import Config
 from sqlalchemy import inspect, select, text
 from sqlalchemy.dialects import postgresql
+from sqlalchemy.engine import make_url
 from sqlalchemy.exc import IntegrityError
 
 from app.database import Base, DEFAULT_DATABASE_PATH, get_database_url, make_engine
@@ -11,6 +12,17 @@ from app.db_models import SubscriptionRecord
 
 
 PROJECT_ROOT = DEFAULT_DATABASE_PATH.parent.parent
+
+
+def test_postgres_credentials_are_encoded_and_tls_is_required(monkeypatch):
+    monkeypatch.delenv("SUBSCRIPTIONS_DATABASE_URL", raising=False)
+    monkeypatch.setenv("SUBSCRIPTIONS_DB_HOST", "db.example.internal")
+    monkeypatch.setenv("SUBSCRIPTIONS_DB_USER", "app")
+    monkeypatch.setenv("SUBSCRIPTIONS_DB_PASSWORD", "p@ss:/word")
+    url = make_url(get_database_url())
+    assert url.password == "p@ss:/word"
+    assert url.database == "subscriptions"
+    assert url.query["sslmode"] == "require"
 
 
 def test_default_database_url_is_project_relative_and_overridable(monkeypatch):

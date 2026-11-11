@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 
 from sqlalchemy import create_engine, event
-from sqlalchemy.engine import Engine
+from sqlalchemy.engine import Engine, URL
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.pool import StaticPool
 
@@ -22,6 +22,17 @@ def get_database_url() -> str:
     configured_url = os.getenv("SUBSCRIPTIONS_DATABASE_URL")
     if configured_url:
         return configured_url
+    host = os.getenv("SUBSCRIPTIONS_DB_HOST")
+    if host:
+        return URL.create(
+            "postgresql+psycopg",
+            username=os.environ["SUBSCRIPTIONS_DB_USER"],
+            password=os.environ["SUBSCRIPTIONS_DB_PASSWORD"],
+            host=host,
+            port=5432,
+            database="subscriptions",
+            query={"sslmode": "require"},
+        ).render_as_string(hide_password=False)
     return f"sqlite:///{DEFAULT_DATABASE_PATH}"
 
 
