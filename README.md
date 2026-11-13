@@ -5,6 +5,8 @@ estimado y mantener a la vista los próximos cobros y su historial de renovacion
 
 ![Resumen de Subscription Tracker con gasto mensual y próximos cobros ficticios](docs/images/resumen.png)
 
+[Ver demostración de la aplicación (video, 37 s)](docs/images/subscription-tracker-demo.webm)
+
 > Las capturas utilizan servicios, importes y fechas ficticios. El proyecto incluye
 > un laboratorio personal en AWS con acceso restringido; no hay una demo pública.
 
