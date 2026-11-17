@@ -48,8 +48,8 @@ nombres vacíos, meses inválidos, montos no positivos y campos ajenos al contra
 API implementada: catálogo y registros bajo `/utilities`, con detalle, edición/archivo,
 historial, confirmación/reversión y resumen mensual; autenticación OIDC existente.
 El catálogo no tiene eliminación permanente en v1. La web ya permite gestionar servicios,
-consultar períodos e historial, y registrar/corregir/confirmar/revertir pagos. La integración
-del bloque de servicios en el Resumen principal queda pendiente de S3.3.
+consultar períodos e historial, y registrar/corregir/confirmar/revertir pagos. El Resumen
+principal incluye los totales mensuales de Servicios separados de las estimaciones de suscripciones.
 
 ## Experiencia prevista
 
@@ -73,7 +73,7 @@ del bloque de servicios en el Resumen principal queda pendiente de S3.3.
 - [x] **S2.3** Exponer endpoints autenticados y resumen mensual; probar errores y concurrencia. Suite completa con PostgreSQL 18: 232 pruebas aprobadas, sin omisiones.
 - [x] **S3.1** Añadir cliente API, tipos TypeScript y navegación «Servicios». Vista inicial de consulta conectada y verificada en escritorio/móvil.
 - [x] **S3.2** Implementar vista mensual, detalle, formularios y estados de carga/error/vacío. 25 pruebas frontend y recorrido real con API temporal verificados.
-- [ ] **S3.3** Integrar bloque mensual en Resumen sin mezclar previsión con pagos reales.
+- [x] **S3.3** Integrar bloque mensual en Resumen sin mezclar previsión con pagos reales. Estados y reintento independientes; 30 pruebas frontend aprobadas.
 - [ ] **S3.4** Probar flujo completo y revisar visualmente en escritorio y móvil.
 - [ ] **S4.1** Respaldar PostgreSQL local antes de aplicar la migración.
 - [ ] **S4.2** Reconstruir contenedores locales y comprobar migración y persistencia tras reinicio.
@@ -292,3 +292,31 @@ El servidor, navegador y base de revisión son temporales. La app Docker y la ba
 siguen sin actualizarse. Cambios de esta tanda sin commit. Siguiente tarea: **S3.3**, bloque
 mensual de servicios en el Resumen, separado de las estimaciones de suscripciones. S3.4
 queda para la verificación final del flujo integrado antes de actualizar el entorno local.
+
+### Avance S3.3: Servicios en el Resumen principal
+
+El Resumen muestra «Servicios de este mes» entre la estimación de suscripciones y sus
+avisos de cobro. Consulta únicamente el resumen del período actual según America/Lima:
+importes y cantidades pendientes/pagadas, incluidos los registros de servicios archivados.
+«Ver servicios» abre `/servicios?period=YYYY-MM` con ese mismo período.
+
+Se mantiene la estimación de suscripciones separada y con su aclaración. No se suman
+previsiones, pendientes y pagos ni se presenta saldo financiero. La copia de Servicios
+explica que el período puede diferir del mes de desembolso. Si no hay registros mensuales,
+se muestra un mensaje y acceso a Servicios; no se generan deudas ni pagos automáticamente.
+
+La consulta de Servicios tiene carga, error y reintento propios: una falla no oculta las
+suscripciones y viceversa. Durante carga/error no se presentan ceros como resultados.
+No se añadieron endpoints, contratos ni migraciones.
+
+Verificación: **30 pruebas frontend aprobadas**, TypeScript y build correctos. Las cinco
+pruebas nuevas cubren período de Lima, separación de importes, enlace mensual, mes vacío,
+carga y fallos/reintentos independientes. Revisión Chromium contra API temporal a
+1440×960 y 390×844, con suscripción ficticia y servicios activos/archivados; enlace al
+mes correcto comprobado. Capturas locales en `output/playwright/` (ignoradas por Git).
+Detector visual: solo advertencias de la fuente Inter preexistente. `git diff --check`
+sin problemas. No se reejecutó PostgreSQL: el backend no cambió en esta tanda.
+
+Siguiente tarea: **S3.4**, verificación final del flujo integrado, regresión y revisión
+de escritorio/móvil antes de respaldar y actualizar el entorno personal. Cambios S3.3
+sin commit en `feature/utilities-module`; Docker y la base personal siguen sin actualizarse.

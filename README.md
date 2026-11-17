@@ -128,8 +128,12 @@ que te corresponde ahora. Se acepta coma o punto decimal, sin calcular el repart
 servicios archivados permiten corregir y liquidar registros existentes; hay que reactivarlos
 para registrar otro período. No se borran servicios ni períodos desde la interfaz.
 
-La integración con el Resumen principal queda pendiente de S3.3. Frontend: 25 pruebas
-aprobadas, TypeScript/build correctos y recorrido real con API temporal en escritorio/móvil.
+El Resumen principal incluye «Servicios de este mes», con montos y cantidades pendientes/
+pagadas para el período actual de Lima y acceso directo al mismo mes en Servicios. Sus
+estados de carga, error y reintento son independientes de Suscripciones. Las estimaciones
+de suscripciones se mantienen separadas; no se calcula todavía un saldo financiero.
+Frontend: 30 pruebas aprobadas, TypeScript/build correctos y revisión real con API temporal
+en escritorio/móvil. La verificación final del flujo integrado queda en S3.4.
 
 El backend se verificó con SQLite y PostgreSQL 18 temporales,
 incluidas operaciones simultáneas: 232 pruebas aprobadas, sin omisiones. No se ha aplicado

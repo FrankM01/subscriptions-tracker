@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { api, ApiError } from "../api";
 import { EmptyState, ErrorState, LoadingState } from "../components/Feedback";
 import { Icon } from "../components/Icon";
+import { UtilityDashboardSummary } from "../components/UtilityDashboardSummary";
 import { formatDate, formatMoney, renewalStatus } from "../format";
 import type { RenewalAlert, Subscription, Summary } from "../types";
 
@@ -40,7 +41,7 @@ export function Dashboard() {
   return (
     <>
       <div className="page-heading dashboard-heading">
-        <div><div className="eyebrow">TU PANORAMA</div><h1>Resumen</h1><p>Un vistazo claro a tus suscripciones y próximos cobros.</p></div>
+        <div><h1>Resumen</h1><p>Tus suscripciones y aportes de servicios en un solo lugar.</p></div>
         <Link className="button button-primary" to="/suscripciones"><Icon name="plus" />Administrar suscripciones</Link>
       </div>
       {error && <ErrorState message={error} onRetry={() => void load()} />}
@@ -52,7 +53,16 @@ export function Dashboard() {
             <span className="summary-decoration" aria-hidden="true">S/</span>
           </section>
 
-          <div className="dashboard-section-title"><div><div className="eyebrow">LO QUE VIENE</div><h2>Cobros pendientes</h2></div><Link className="text-link" to="/suscripciones">Ver todas <Icon name="arrow" /></Link></div>
+          <div className="dashboard-footnote"><span className="footnote-mark">i</span>El monto mensual de suscripciones es una estimación y no representa pagos realizados.</div>
+        </>
+      )}
+
+      <UtilityDashboardSummary />
+
+      {!loading && !error && (
+        <>
+
+          <div className="dashboard-section-title"><div><h2>Cobros pendientes de suscripciones</h2></div><Link className="text-link" to="/suscripciones">Ver todas <Icon name="arrow" /></Link></div>
 
           {alerts.length === 0 ? (
             <EmptyState title="Todo tranquilo por ahora" message="No tienes cobros vencidos ni próximos dentro de las ventanas de aviso." action={{ label: "Ver suscripciones", onClick: () => navigate("/suscripciones") }} />
@@ -69,7 +79,6 @@ export function Dashboard() {
             </div>
           )}
 
-          <div className="dashboard-footnote"><span className="footnote-mark">i</span>El monto mensual es una estimación y no representa pagos realizados.</div>
         </>
       )}
     </>
