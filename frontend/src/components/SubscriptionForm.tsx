@@ -20,13 +20,24 @@ export function SubscriptionFormModal({
   const [renewalDate, setRenewalDate] = useState(subscription?.renewal_date ?? "");
   const [renewalDateTouched, setRenewalDateTouched] = useState(false);
   const [isActive, setIsActive] = useState(subscription?.is_active ?? true);
+  const [alreadyPaid, setAlreadyPaid] = useState(false);
+  const [paidDate, setPaidDate] = useState(todayInLima());
+  const [paidAmount, setPaidAmount] = useState<string | undefined>(undefined);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const minDate = addCalendarDays(todayInLima(), 1);
+  const creatingPaid = !subscription && alreadyPaid;
+  const actualAmount = paidAmount ?? cost;
+  const invalidPayment = creatingPaid && (!paidDate || paidDate > todayInLima() || !actualAmount || Number(actualAmount) <= 0);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (busy) return;
     setError("");
+    if (invalidPayment) {
+      setError("Revisa el importe y la fecha del pago: debe ser hoy o una fecha anterior.");
+      return;
+    }
     if (subscription && !subscription.is_active && isActive && !renewalDateTouched) {
       setError("Al reactivar, revisa y selecciona la próxima fecha de cobro.");
       return;
@@ -59,6 +70,7 @@ export function SubscriptionFormModal({
           billing_cycle: billingCycle,
           renewal_date: renewalDate,
           is_active: isActive,
+          ...(creatingPaid ? { initial_payment: { paid_date: paidDate, paid_amount: actualAmount } } : {}),
         };
         await api.createSubscription(newSubscription);
       }
@@ -74,10 +86,12 @@ export function SubscriptionFormModal({
     <Modal
       title={subscription ? "Editar suscripción" : "Nueva suscripción"}
       eyebrow={subscription ? "ACTUALIZA TUS DATOS" : "AGREGA UN COBRO RECURRENTE"}
-      onClose={onClose}
+      onClose={() => { if (!busy) onClose(); }}
     >
       <form className="form-stack" onSubmit={submit}>
         {error && <div className="form-error" role="alert">{error}</div>}
+        <fieldset className="utility-fields form-stack" disabled={busy}>
+        <legend className="sr-only">Datos de la suscripción</legend>
         <label className="field">
           <span>Nombre</span>
           <input autoFocus maxLength={100} onChange={(event) => setName(event.target.value)} placeholder="Ej. Plataforma de música" required value={name} />
@@ -95,22 +109,32 @@ export function SubscriptionFormModal({
             </select>
           </label>
         </div>
+        {!subscription && <label className="toggle-field subscription-initial-payment">
+          <span className="toggle-copy"><strong>Ya pagué este período</strong><small>Guarda el primer pago en el historial al crear la suscripción.</small></span>
+          <input checked={alreadyPaid} onChange={(event) => setAlreadyPaid(event.target.checked)} type="checkbox" />
+          <span className="toggle-control" aria-hidden="true" />
+        </label>}
         <label className="field">
-          <span>Próxima fecha de cobro</span>
-          <input min={!subscription || renewalDateTouched ? minDate : undefined} onChange={(event) => { setRenewalDate(event.target.value); setRenewalDateTouched(true); }} required type="date" value={renewalDate} />
-          <small>Debe ser futura al crear o cambiar la fecha. Para reactivar, selecciona la próxima fecha aunque quieras conservar la actual.</small>
+          <span>{creatingPaid ? "Fecha del cobro ya pagado" : "Próxima fecha de cobro"}</span>
+          <input min={!creatingPaid && (!subscription || renewalDateTouched) ? minDate : undefined} onChange={(event) => { setRenewalDate(event.target.value); setRenewalDateTouched(true); }} required type="date" value={renewalDate} />
+          <small>{creatingPaid ? "Fecha del período que estás registrando. El próximo cobro avanzará un mes o un año según la frecuencia; los períodos antiguos pueden dejar un cobro pendiente vencido." : "Debe ser futura al crear o cambiar la fecha. Para reactivar, selecciona la próxima fecha aunque quieras conservar la actual."}</small>
         </label>
+        {creatingPaid && <div className="form-grid">
+          <label className="field"><span>Fecha real del pago</span><input type="date" required max={todayInLima()} value={paidDate} onChange={(event) => setPaidDate(event.target.value)} /></label>
+          <label className="field"><span>Importe pagado</span><div className="input-with-prefix"><span>S/</span><input type="number" required inputMode="decimal" min="0.01" max="9999999.99" step="0.01" value={actualAmount} onChange={(event) => setPaidAmount(event.target.value)} /></div></label>
+        </div>}
         <label className="toggle-field">
           <span className="toggle-copy"><strong>Suscripción activa</strong><small>Las inactivas no aparecen en el gasto ni en los avisos.</small></span>
           <input checked={isActive} onChange={(event) => setIsActive(event.target.checked)} type="checkbox" />
           <span className="toggle-control" aria-hidden="true" />
         </label>
         <div className="form-actions">
-          <button className="button button-quiet" onClick={onClose} type="button">Cancelar</button>
-          <button className="button button-primary" disabled={busy || cost === "" || Number(cost) <= 0 || !renewalDate || ((!subscription || renewalDateTouched) && renewalDate < minDate)} type="submit">
+          <button className="button button-quiet" disabled={busy} onClick={onClose} type="button">Cancelar</button>
+          <button className="button button-primary" disabled={busy || cost === "" || Number(cost) <= 0 || !renewalDate || invalidPayment || (!creatingPaid && (!subscription || renewalDateTouched) && renewalDate < minDate)} type="submit">
             <Icon name="check" />{busy ? "Guardando…" : subscription ? "Guardar cambios" : "Crear suscripción"}
           </button>
         </div>
+        </fieldset>
       </form>
     </Modal>
   );

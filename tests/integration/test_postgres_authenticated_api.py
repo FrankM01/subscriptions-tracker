@@ -147,6 +147,23 @@ def test_protected_subscription_lifecycle_with_valid_and_invalid_tokens(
             )
             assert deleted.status_code == 204
             assert client.get("/subscriptions", headers=headers).json() == []
+
+            # Create an already-paid period through the authenticated PG API.
+            paid = client.post("/subscriptions", headers=headers, json={
+                "name": "Already paid", "cost": "20.00", "billing_cycle": "monthly",
+                "renewal_date": "2025-01-31",
+                "initial_payment": {"paid_date": "2025-02-01", "paid_amount": "19.90"},
+            })
+            assert paid.status_code == 201, paid.text
+            assert paid.json()["renewal_date"] == "2025-02-28"
+            paid_path = f"/subscriptions/{paid.json()['subscription_id']}/renewals"
+            paid_history = client.get(paid_path, headers=headers).json()
+            assert len(paid_history) == 1
+            assert paid_history[0]["scheduled_date"] == "2025-01-31"
+            assert paid_history[0]["paid_date"] == "2025-02-01"
+            assert Decimal(paid_history[0]["paid_amount"]) == Decimal("19.90")
+            assert client.post(paid_path + "/undo", headers=headers).json()["renewal_date"] == "2025-01-31"
+            assert client.get(paid_path, headers=headers).json() == []
     finally:
         set_service(original_service) if "original_service" in locals() else None
         if test_engine is not None:

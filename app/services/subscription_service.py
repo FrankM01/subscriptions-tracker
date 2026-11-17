@@ -1,6 +1,7 @@
 import uuid
 
 from fastapi import HTTPException
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.models.subscription import (
     RenewalConfirmation,
@@ -39,6 +40,19 @@ class SubscriptionService:
             renewal_date=data.renewal_date,
             is_active=data.is_active,
         )
+        if data.initial_payment is not None:
+            try:
+                return self._repository.add_with_initial_payment(
+                    subscription, data.initial_payment.paid_date or today_in_lima(),
+                    data.initial_payment.paid_amount,
+                )
+            except (ValueError, OverflowError) as error:
+                raise HTTPException(
+                    status_code=422,
+                    detail="La fecha del cobro no permite calcular el siguiente período.",
+                ) from error
+            except SQLAlchemyError as error:
+                raise HTTPException(status_code=500, detail="No se pudo guardar la suscripción y su pago.") from error
         self._repository.add(subscription)
         return subscription
 

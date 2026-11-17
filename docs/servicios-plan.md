@@ -339,3 +339,14 @@ PostgreSQL y JWT se verificaron en integraciones separadas, sin login real de Ke
 
 Siguiente tarea: **S4.1**, respaldo verificado de PostgreSQL local antes de migrar y
 reconstruir la app. No se actualizó el contenedor personal ni se modificaron sus datos.
+
+### Solicitud adicional: crear suscripciones ya pagadas
+
+Implementada la opción «Ya pagué este período» en Nueva suscripción, con fechas
+programada/real e importe independientes, historial inicial y avance de un ciclo en una
+sola transacción. Sin migración nueva. Especificación y evidencia:
+[Suscripciones: pago inicial](suscripciones-pago-inicial.md); en el vault,
+[[Suscripciones - Pago inicial]].
+
+Verificación ampliada: **244 pruebas Python con PostgreSQL, 33 frontend y 2 E2E existentes
+aprobadas**, TypeScript/build correctos. El respaldo y actualización local siguen en S4.1–S4.2.

@@ -70,4 +70,54 @@ describe("SubscriptionFormModal", () => {
       { name: "Servicio actualizado" },
     ));
   });
+
+  it("creates an already-paid subscription with separate billing and actual payment dates", async () => {
+    const user = userEvent.setup();
+    const saved = vi.fn();
+    render(<SubscriptionFormModal onClose={vi.fn()} onSaved={saved} />);
+    await user.type(screen.getByLabelText("Nombre"), "Música pagada");
+    await user.type(screen.getByRole("spinbutton"), "20.00");
+    await user.click(screen.getByLabelText(/Ya pagué este período/));
+    fireEvent.change(screen.getByLabelText(/Fecha del cobro ya pagado/), { target: { value: "2025-01-31" } });
+    fireEvent.change(screen.getByLabelText("Fecha real del pago"), { target: { value: "2025-02-01" } });
+    const amount = screen.getByLabelText(/Importe pagado/);
+    await user.clear(amount); await user.type(amount, "19.90");
+    await user.click(screen.getByRole("button", { name: "Crear suscripción" }));
+    await waitFor(() => expect(api.createSubscription).toHaveBeenCalledWith(expect.objectContaining({
+      renewal_date: "2025-01-31", cost: "20", billing_cycle: "monthly",
+      initial_payment: { paid_date: "2025-02-01", paid_amount: "19.9" },
+    })));
+    expect(saved).toHaveBeenCalledOnce();
+  });
+
+  it("removes paid mode without leaking an initial payment into normal creation", async () => {
+    const user = userEvent.setup();
+    render(<SubscriptionFormModal onClose={vi.fn()} onSaved={vi.fn()} />);
+    await user.type(screen.getByLabelText("Nombre"), "Pendiente");
+    await user.type(screen.getByRole("spinbutton"), "15");
+    await user.click(screen.getByLabelText(/Ya pagué este período/));
+    fireEvent.change(screen.getByLabelText(/Fecha del cobro ya pagado/), { target: { value: "2025-01-31" } });
+    await user.click(screen.getByLabelText(/Ya pagué este período/));
+    expect(screen.queryByLabelText("Fecha real del pago")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Crear suscripción" })).toBeDisabled();
+    fireEvent.change(screen.getByLabelText(/Próxima fecha de cobro/), { target: { value: addCalendarDays(todayInLima(), 5) } });
+    await user.click(screen.getByRole("button", { name: "Crear suscripción" }));
+    await waitFor(() => expect(api.createSubscription).toHaveBeenCalled());
+    expect(vi.mocked(api.createSubscription).mock.calls[0][0]).not.toHaveProperty("initial_payment");
+  });
+
+  it("blocks future actual payment dates and does not offer initial payment when editing", async () => {
+    const user = userEvent.setup();
+    const view = render(<SubscriptionFormModal onClose={vi.fn()} onSaved={vi.fn()} />);
+    await user.type(screen.getByLabelText("Nombre"), "Música");
+    await user.type(screen.getByRole("spinbutton"), "15");
+    await user.click(screen.getByLabelText(/Ya pagué este período/));
+    fireEvent.change(screen.getByLabelText(/Fecha del cobro ya pagado/), { target: { value: todayInLima() } });
+    fireEvent.change(screen.getByLabelText("Fecha real del pago"), { target: { value: addCalendarDays(todayInLima(), 1) } });
+    expect(screen.getByRole("button", { name: "Crear suscripción" })).toBeDisabled();
+    expect(api.createSubscription).not.toHaveBeenCalled();
+    view.unmount();
+    render(<SubscriptionFormModal subscription={inactive} onClose={vi.fn()} onSaved={vi.fn()} />);
+    expect(screen.queryByLabelText(/Ya pagué este período/)).not.toBeInTheDocument();
+  });
 });

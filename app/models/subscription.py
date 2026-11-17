@@ -22,19 +22,40 @@ class Subscription(BaseModel):
     is_active: bool = True
 
 
+class InitialSubscriptionPayment(BaseModel):
+    """Actual payment for the billing date supplied when creating a subscription."""
+
+    paid_date: date | None = None
+    paid_amount: Decimal | None = Field(default=None, gt=0, decimal_places=2, max_digits=9)
+
+    @field_validator("paid_date")
+    @classmethod
+    def payment_date_must_not_be_future(cls, value: date | None) -> date | None:
+        if value is not None and value > today_in_lima():
+            raise ValueError("paid_date cannot be in the future")
+        return value
+
+
 class SubscriptionCreate(BaseModel):
     name: str
     cost: Decimal = Field(..., gt=0, decimal_places=2)
     billing_cycle: BillingCycle
     renewal_date: date
     is_active: bool = True
+    initial_payment: InitialSubscriptionPayment | None = Field(
+        default=None,
+        description=(
+            "When provided, renewal_date identifies the already paid billing period. "
+            "Create its payment history and advance one cycle atomically. "
+            "paid_date defaults to today in Lima and paid_amount to cost."
+        ),
+    )
 
-    @field_validator("renewal_date")
-    @classmethod
-    def renewal_date_must_be_future(cls, v: date) -> date:
-        if v <= today_in_lima():
+    @model_validator(mode="after")
+    def validate_pending_date(self) -> "SubscriptionCreate":
+        if self.initial_payment is None and self.renewal_date <= today_in_lima():
             raise ValueError("renewal_date must be a future date")
-        return v
+        return self
 
     @field_validator("name")
     @classmethod

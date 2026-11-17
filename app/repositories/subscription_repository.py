@@ -126,6 +126,31 @@ class SubscriptionRepository:
         with Session(self._engine) as session, session.begin():
             session.add(self._to_record(subscription))
 
+    def add_with_initial_payment(
+        self, subscription: Subscription, paid_date: date, paid_amount: Decimal | None,
+    ) -> Subscription:
+        """Create the subscription and first history entry in one transaction."""
+        if self._engine is None:
+            raise RuntimeError("Database engine is not configured")
+        record = self._to_record(subscription)
+        scheduled_date = subscription.renewal_date
+        next_date = calculate_next_renewal_date(
+            scheduled_date, subscription.billing_cycle, record.anchor_day,
+        )
+        record.renewal_date = next_date
+        record.renewals.append(RenewalRecord(
+            scheduled_date=scheduled_date, paid_date=paid_date,
+            paid_amount_cents=self._to_cents(paid_amount if paid_amount is not None else subscription.cost),
+            resulting_renewal_date=next_date,
+            resulting_billing_cycle=subscription.billing_cycle.value,
+            resulting_anchor_day=record.anchor_day,
+        ))
+        with Session(self._engine) as session, session.begin():
+            session.add(record)
+            session.flush()
+            result = self._to_model(record)
+        return result
+
     def get(self, subscription_id: str) -> Optional[Subscription]:
         if self._engine is None:
             raise RuntimeError("Database engine is not configured")

@@ -35,9 +35,13 @@ export interface SubscriptionInput {
   billing_cycle: BillingCycle;
   renewal_date: string;
   is_active?: boolean;
+  initial_payment?: {
+    paid_date?: string;
+    paid_amount?: string;
+  };
 }
 
-export type SubscriptionUpdateInput = Partial<SubscriptionInput>;
+export type SubscriptionUpdateInput = Partial<Omit<SubscriptionInput, "initial_payment">>;
 
 export interface RenewalConfirmationInput {
   scheduled_date: string;

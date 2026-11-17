@@ -231,6 +231,7 @@ svg { width: 19px; height: 19px; flex: 0 0 auto; }
 .toggle-field input:checked + .toggle-control { background: var(--green); }
 .toggle-field input:checked + .toggle-control::after { transform: translateX(16px); }
 .toggle-field input:focus-visible + .toggle-control { outline: 3px solid rgba(20,125,104,.25); outline-offset: 2px; }
+.subscription-initial-payment .toggle-control { pointer-events: none; }
 .form-actions { display: flex; justify-content: flex-end; gap: 8px; padding-top: 5px; }
 .form-error { display: grid; gap: 4px; padding: 10px 12px; border-radius: 8px; color: #994a40; background: var(--red-soft); font-size: 11px; line-height: 1.5; }
 .form-error small { font-size: 10px; }

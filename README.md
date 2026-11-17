@@ -15,6 +15,7 @@ estimado y mantener a la vista los próximos cobros y su historial de renovacion
 - Crear, editar, activar, desactivar y eliminar suscripciones mensuales o anuales.
 - Consultar el gasto mensual estimado y los cobros próximos o vencidos.
 - Registrar renovaciones y consultar su historial desde el detalle de cada servicio.
+- Crear una suscripción con un período ya pagado, guardándolo en el historial y avanzando el próximo cobro.
 - Iniciar y cerrar sesión con Keycloak; la API protege sus rutas con tokens OIDC.
 - Persistir datos en SQLite o PostgreSQL y administrar el esquema con Alembic.
 
@@ -80,6 +81,18 @@ para ese origen. Para detener los servicios conservando los datos, ejecuta
 más abajo.
 
 ## Documentación técnica
+
+### Registrar una suscripción que ya pagaste
+
+En **Nueva suscripción**, activa **Ya pagué este período**. Indica la fecha programada del
+cobro pagado, la fecha real y el importe. Al guardar se registra el primer pago y el próximo
+cobro avanza un mes o un año según la frecuencia. Por ejemplo, un cobro de noviembre
+pagado el 3 de noviembre deja el siguiente en diciembre; ambas fechas quedan registradas.
+El importe histórico puede ser distinto del precio recurrente.
+
+La creación sin pago inicial conserva su fecha futura obligatoria. Esta opción usa las
+tablas existentes, sin migración adicional. Detalles del contrato y pruebas:
+[Suscripciones con pago inicial](docs/suscripciones-pago-inicial.md).
 
 ### Módulo Servicios: backend en desarrollo
 

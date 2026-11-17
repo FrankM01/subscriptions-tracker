@@ -86,3 +86,11 @@ permiso para abrir el puerto de prueba.
 migración y reconstruir la aplicación. La imagen que atiende el puerto 8000 y la base
 personal no se modificaron durante S3.4. La actualización local, persistencia tras reinicio
 y comprobación del acceso con Keycloak corresponden al cierre operativo S4.
+
+## Ampliación posterior: suscripciones ya pagadas
+
+Tras la verificación anterior se añadió la creación de suscripciones con pago inicial.
+Se reejecutó la regresión: **244 pruebas Python con PostgreSQL 18 y ninguna omitida,
+33 frontend, TypeScript/build y 2 E2E existentes aprobadas**. La evidencia de esta
+ampliación está en [Suscripciones: pago inicial](suscripciones-pago-inicial.md).
+Los resultados de las secciones anteriores documentan la revisión original de `6a8e324`.
