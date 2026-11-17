@@ -132,3 +132,14 @@ class UtilityPaymentConfirmation(BaseModel):
     @classmethod
     def validate_paid_date(cls, value: date | None) -> date | None:
         return UtilityEntryCreate.payment_must_not_be_future(value)
+
+
+class UtilityMonthlySummary(BaseModel):
+    """Totals by service period, including archived services, in PEN."""
+
+    year: int
+    month: int
+    pending_count: int
+    paid_count: int
+    total_pending: Decimal
+    total_paid: Decimal

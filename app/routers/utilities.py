@@ -1,14 +1,15 @@
 """Authenticated personal utility catalog API."""
 
 from uuid import UUID
+from typing import Any
 
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, Query, Request, status
 
 from app.auth import get_current_user
 from app.models.subscription import ErrorResponse
 from app.models.utility import (
     Utility, UtilityCreate, UtilityEntry, UtilityEntryCreate, UtilityEntryUpdate,
-    UtilityPaymentConfirmation, UtilityUpdate,
+    UtilityMonthlySummary, UtilityPaymentConfirmation, UtilityUpdate,
 )
 from app.services.utility_service import UtilityService
 
@@ -38,6 +39,16 @@ def list_utilities(
     return service.list_all(is_active)
 
 
+# Static paths must precede the UUID route.
+@router.get("/summary", response_model=UtilityMonthlySummary)
+def get_monthly_summary(
+    year: int = Query(ge=1900, le=9999), month: int = Query(ge=1, le=12),
+    service: UtilityService = Depends(get_service),
+) -> UtilityMonthlySummary:
+    """Totals by the service's year/month, regardless of actual payment date."""
+    return service.get_monthly_summary(year, month)
+
+
 @router.get("/{utility_id}", response_model=Utility, responses={404: {"model": ErrorResponse}})
 def get_utility(utility_id: UUID, service: UtilityService = Depends(get_service)) -> Utility:
     return service.get(str(utility_id))
@@ -62,7 +73,9 @@ def list_entries(
     return service.list_entries(str(utility_id))
 
 
-ENTRY_ERRORS = {404: {"model": ErrorResponse}, 409: {"model": ErrorResponse}}
+ENTRY_ERRORS: dict[int | str, dict[str, Any]] = {
+    404: {"model": ErrorResponse}, 409: {"model": ErrorResponse},
+}
 
 
 @router.post(

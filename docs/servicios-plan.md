@@ -45,9 +45,9 @@ y `UtilityEntry`. Importes decimales serializados como cadenas; máximo 9 dígit
 2 decimales para caber en el entero de céntimos de PostgreSQL. Rechazar pagos futuros,
 nombres vacíos, meses inválidos, montos no positivos y campos ajenos al contrato.
 
-API prevista, todavía no implementada: catálogo y registros bajo `/utilities`, con
-detalle, edición/archivo, historial, confirmación/reversión y resumen mensual;
-autenticación OIDC existente. El catálogo no tendrá eliminación permanente en v1.
+API implementada: catálogo y registros bajo `/utilities`, con detalle, edición/archivo,
+historial, confirmación/reversión y resumen mensual; autenticación OIDC existente.
+El catálogo no tiene eliminación permanente en v1. La interfaz sigue pendiente.
 
 ## Experiencia prevista
 
@@ -68,7 +68,7 @@ autenticación OIDC existente. El catálogo no tendrá eliminación permanente e
 - [x] **S1.4** Verificar migración, restricciones, persistencia y regresión en SQLite temporal; registrar resultados. PostgreSQL real pendiente en S2.3/S4.
 - [x] **S2.1** Implementar repositorio y servicio: catálogo, archivo/reactivación e historial. Endpoints autenticados y 22 pruebas nuevas verificadas.
 - [x] **S2.2** Implementar registro mensual, corrección, confirmación y reversión transaccionales. 29 pruebas nuevas, incluidas operaciones simultáneas sobre SQLite.
-- [ ] **S2.3** Exponer endpoints autenticados y resumen mensual; probar errores y concurrencia.
+- [x] **S2.3** Exponer endpoints autenticados y resumen mensual; probar errores y concurrencia. Suite completa con PostgreSQL 18: 232 pruebas aprobadas, sin omisiones.
 - [ ] **S3.1** Añadir cliente API, tipos TypeScript y navegación «Servicios».
 - [ ] **S3.2** Implementar vista mensual, detalle, formularios y estados de carga/error/vacío.
 - [ ] **S3.3** Integrar bloque mensual en Resumen sin mezclar previsión con pagos reales.
@@ -170,3 +170,51 @@ La suite completa pasó con **212 pruebas y 3 omitidas** de integración Postgre
 
 Siguiente tarea: **S2.3**, resumen mensual y verificación de integración con PostgreSQL.
 No se reconstruyeron contenedores ni se migró la base personal en S2.2.
+
+### Avance S2.3: resumen mensual e integración PostgreSQL
+
+Implementado `GET /utilities/summary?year=2025&month=11`, autenticado. Año y mes son
+obligatorios y usan los mismos límites que los registros (1900–9999 y 1–12). Se registra
+la ruta estática antes de `/{utility_id}` para evitar que `summary` se valide como UUID.
+
+Respuesta de ejemplo:
+
+```json
+{
+  "year": 2025,
+  "month": 11,
+  "pending_count": 2,
+  "paid_count": 1,
+  "total_pending": "0.30",
+  "total_paid": "50.35"
+}
+```
+
+Los importes son PEN, con dos decimales; meses sin registros devuelven conteos 0 e
+importes `"0.00"`. Una consulta agregada calcula conteos e importes en la misma lectura,
+sumando céntimos para evitar errores de coma flotante. Incluye pendientes y pagos de
+servicios archivados. No genera obligaciones para servicios sin registro mensual.
+
+El resumen agrupa por el período del servicio, no por fecha de desembolso. Un pago de
+noviembre realizado en diciembre cuenta en noviembre. En el futuro saldo financiero,
+se consultará la fecha efectiva del pago en un reporte distinto.
+
+Verificación S2.3: **12 pruebas nuevas de resumen** y **5 de integración de servicios
+con PostgreSQL**. La suite completa se ejecutó con **PostgreSQL 18: 232 pruebas
+aprobadas, ninguna omitida**. Pasaron también las tres integraciones previas de
+suscripciones y migración SQLite→PostgreSQL. `git diff --check` sin problemas.
+
+La integración verificó upgrade con suscripciones y renovaciones previas, Alembic sin
+diferencias, downgrade/upgrade conservando datos anteriores, restricciones de BD,
+rollback, autenticación con JWT RS256 firmado para pruebas y rechazo sin token/token
+inválido, archivo/reactivación, correcciones y persistencia tras reconectar. Creación,
+confirmación y reversión simultáneas tuvieron un éxito y un conflicto por operación.
+Las claves de firma y JWKS fueron locales de prueba; no se contactó Keycloak real.
+
+Se añadió `.venv/bin/python -m scripts.run_postgres_tests`: inicia un PostgreSQL
+temporal con puerto aleatorio en loopback, almacenamiento en RAM y sin credenciales ni
+volúmenes personales; ejecuta pytest y elimina el contenedor al terminar. Cada prueba
+de integración crea y elimina su propio esquema. Puede recibir argumentos de pytest.
+
+Siguiente tarea: **S3.1**, cliente API, tipos TypeScript y navegación «Servicios».
+La app local sigue con su imagen anterior y la base personal sigue sin migrarse.

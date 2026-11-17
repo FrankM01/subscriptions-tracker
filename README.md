@@ -89,6 +89,7 @@ El catálogo de servicios ya dispone de API autenticada con Keycloak:
 | --- | --- | --- |
 | POST | `/utilities` | Crear con `name` y `provider` opcional. |
 | GET | `/utilities` | Listar todos; filtrar con `?is_active=true` o `false`. |
+| GET | `/utilities/summary?year=2025&month=11` | Totales y cantidades pendientes/pagadas por período. |
 | GET | `/utilities/{utility_id}` | Consultar un servicio. |
 | PATCH | `/utilities/{utility_id}` | Editar `name`, `provider` o `is_active`. |
 | GET | `/utilities/{utility_id}/entries` | Consultar historial por período descendente. |
@@ -110,8 +111,13 @@ Cada servicio admite un registro por mes/año. Duplicados, confirmaciones repeti
 reversiones sin pago responden 409. Los servicios archivados conservan sus registros
 y permiten liquidarlos o corregirlos; reactivarlos antes de registrar otro período.
 
-El resumen mensual y la interfaz están pendientes. Este avance se verificó con bases
-temporales SQLite, incluidas operaciones simultáneas; no se ha aplicado
+El resumen requiere año y mes y devuelve `year`, `month`, `pending_count`, `paid_count`,
+`total_pending` y `total_paid` (importes PEN como cadenas con dos decimales). Incluye
+servicios archivados y agrupa por período del servicio, independientemente de la fecha
+real del pago. Meses sin registros devuelven cero; no se generan deudas automáticamente.
+
+La interfaz está pendiente. El backend se verificó con SQLite y PostgreSQL 18 temporales,
+incluidas operaciones simultáneas: 232 pruebas aprobadas, sin omisiones. No se ha aplicado
 todavía a la base personal ni reconstruido el contenedor local. Antes de actualizar la
 app local, respaldar PostgreSQL: al arrancar la imagen nueva, Alembic aplica la migración
 de servicios automáticamente. Plan y checklist: [Servicios](docs/servicios-plan.md).
@@ -401,9 +407,24 @@ que existan las tablas antes de iniciar FastAPI.
 ```
 
 La integración con PostgreSQL es optativa. Usa una base dedicada para pruebas;
-el test crea y elimina un esquema temporal dentro de ella:
+cada test crea y elimina un esquema temporal dentro de ella:
 
 ```sh
 SUBSCRIPTIONS_TEST_POSTGRES_URL="postgresql+psycopg://usuario:clave@localhost:5432/subscriptions_test" \
   .venv/bin/python -m pytest tests/integration -q
+```
+
+Para ejecutar la suite completa sin configurar una base ni usar tus credenciales,
+con Docker activo:
+
+```sh
+.venv/bin/python -m scripts.run_postgres_tests
+```
+
+Este comando inicia PostgreSQL 18 temporal con un puerto aleatorio en `127.0.0.1` y
+almacenamiento en RAM, ejecuta la suite y elimina el contenedor al terminar. No monta
+volúmenes de la app ni lee `.env`. Puedes pasar argumentos de pytest, por ejemplo:
+
+```sh
+.venv/bin/python -m scripts.run_postgres_tests tests/integration -q
 ```

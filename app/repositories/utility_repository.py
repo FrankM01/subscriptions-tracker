@@ -3,16 +3,16 @@
 from decimal import Decimal
 from contextlib import contextmanager
 from collections.abc import Iterator
-from uuid import uuid4
+from uuid import UUID, uuid4
 
-from sqlalchemy import select, update
+from sqlalchemy import case, func, select, update
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
 from app.db_models import UtilityEntryRecord, UtilityRecord
 from app.models.utility import (
     Utility, UtilityEntry, UtilityEntryCreate, UtilityEntryUpdate,
-    UtilityPaymentConfirmation, UtilityUpdate,
+    UtilityMonthlySummary, UtilityPaymentConfirmation, UtilityUpdate,
 )
 from app.utils.dates import today_in_lima
 
@@ -32,7 +32,7 @@ class UtilityRepository:
     @staticmethod
     def _to_model(record: UtilityRecord) -> Utility:
         return Utility(
-            utility_id=record.utility_id,
+            utility_id=UUID(record.utility_id),
             name=record.name,
             provider=record.provider,
             is_active=record.is_active,
@@ -78,10 +78,30 @@ class UtilityRepository:
         with Session(self._engine) as session:
             return [self._to_entry(record) for record in session.scalars(statement)]
 
+    def get_monthly_summary(self, year: int, month: int) -> UtilityMonthlySummary:
+        # One aggregate query keeps counts and amounts on the same DB snapshot.
+        # Do not join/filter active services: archiving must not erase obligations.
+        pending = UtilityEntryRecord.paid_date.is_(None)
+        paid = UtilityEntryRecord.paid_date.is_not(None)
+        statement = select(
+            func.coalesce(func.sum(case((pending, 1), else_=0)), 0).label("pending_count"),
+            func.coalesce(func.sum(case((paid, 1), else_=0)), 0).label("paid_count"),
+            func.coalesce(func.sum(case((pending, UtilityEntryRecord.amount_cents), else_=0)), 0).label("pending_cents"),
+            func.coalesce(func.sum(case((paid, UtilityEntryRecord.amount_cents), else_=0)), 0).label("paid_cents"),
+        ).where(UtilityEntryRecord.year == year, UtilityEntryRecord.month == month)
+        with Session(self._engine) as session:
+            totals = session.execute(statement).one()
+            return UtilityMonthlySummary(
+                year=year, month=month, pending_count=totals.pending_count,
+                paid_count=totals.paid_count,
+                total_pending=(Decimal(totals.pending_cents) / 100).quantize(Decimal("0.01")),
+                total_paid=(Decimal(totals.paid_cents) / 100).quantize(Decimal("0.01")),
+            )
+
     @staticmethod
     def _to_entry(record: UtilityEntryRecord) -> UtilityEntry:
         return UtilityEntry(
-            entry_id=record.entry_id, utility_id=record.utility_id,
+            entry_id=UUID(record.entry_id), utility_id=UUID(record.utility_id),
             year=record.year, month=record.month,
             amount=(Decimal(record.amount_cents) / 100).quantize(Decimal("0.01")),
             due_date=record.due_date, paid_date=record.paid_date, notes=record.notes,

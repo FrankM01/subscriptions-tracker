@@ -9,7 +9,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.models.utility import (
     Utility, UtilityCreate, UtilityEntry, UtilityEntryCreate, UtilityEntryUpdate,
-    UtilityPaymentConfirmation, UtilityUpdate,
+    UtilityMonthlySummary, UtilityPaymentConfirmation, UtilityUpdate,
 )
 from app.repositories.utility_repository import (
     UtilityRepository, UtilityNotFoundError, UtilityEntryConflictError,
@@ -51,6 +51,9 @@ class UtilityService:
 
     def list_all(self, is_active: bool | None = None) -> list[Utility]:
         return self._run(lambda: self._repository.list_all(is_active))
+
+    def get_monthly_summary(self, year: int, month: int) -> UtilityMonthlySummary:
+        return self._run(lambda: self._repository.get_monthly_summary(year, month))
 
     def update(self, utility_id: str, data: UtilityUpdate) -> Utility:
         return self._require(self._run(lambda: self._repository.update(utility_id, data)))
