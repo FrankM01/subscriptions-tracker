@@ -92,14 +92,26 @@ El catálogo de servicios ya dispone de API autenticada con Keycloak:
 | GET | `/utilities/{utility_id}` | Consultar un servicio. |
 | PATCH | `/utilities/{utility_id}` | Editar `name`, `provider` o `is_active`. |
 | GET | `/utilities/{utility_id}/entries` | Consultar historial por período descendente. |
+| POST | `/utilities/{utility_id}/entries` | Registrar mi monto mensual pendiente o pagado. |
+| PATCH | `/utilities/{utility_id}/entries/{entry_id}` | Corregir un registro mensual. |
+| POST | `/utilities/{utility_id}/entries/{entry_id}/confirm` | Confirmar el pago pendiente. |
+| POST | `/utilities/{utility_id}/entries/{entry_id}/undo` | Volver a pendiente conservando monto y período. |
 
 Para archivar, enviar `{"is_active": false}`; para reactivar, `{"is_active": true}`.
 Ambas operaciones conservan el historial. `provider: null` permite quitar el proveedor.
 No se permite eliminar servicios permanentemente. Las respuestas y validaciones están
 documentadas en OpenAPI (`/docs`) al ejecutar esta versión.
 
-La creación de registros mensuales, confirmación de pagos, resumen mensual e interfaz
-están pendientes. Este avance se verificó con bases temporales SQLite; no se ha aplicado
+Para registrar un período, enviar `year`, `month`, `amount` (mi aporte en PEN), y
+opcionalmente `due_date`, `paid_date` y `notes`. Incluir `paid_date` permite cargar pagos
+históricos; omitirlo deja el registro pendiente. Confirmar con `{}` usa hoy en Lima y
+el importe actual; se pueden especificar `amount` y `paid_date` para el pago final.
+Cada servicio admite un registro por mes/año. Duplicados, confirmaciones repetidas y
+reversiones sin pago responden 409. Los servicios archivados conservan sus registros
+y permiten liquidarlos o corregirlos; reactivarlos antes de registrar otro período.
+
+El resumen mensual y la interfaz están pendientes. Este avance se verificó con bases
+temporales SQLite, incluidas operaciones simultáneas; no se ha aplicado
 todavía a la base personal ni reconstruido el contenedor local. Antes de actualizar la
 app local, respaldar PostgreSQL: al arrancar la imagen nueva, Alembic aplica la migración
 de servicios automáticamente. Plan y checklist: [Servicios](docs/servicios-plan.md).

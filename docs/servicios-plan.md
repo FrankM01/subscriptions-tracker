@@ -67,7 +67,7 @@ autenticación OIDC existente. El catálogo no tendrá eliminación permanente e
 - [x] **S1.3** Definir contratos iniciales y validaciones Pydantic.
 - [x] **S1.4** Verificar migración, restricciones, persistencia y regresión en SQLite temporal; registrar resultados. PostgreSQL real pendiente en S2.3/S4.
 - [x] **S2.1** Implementar repositorio y servicio: catálogo, archivo/reactivación e historial. Endpoints autenticados y 22 pruebas nuevas verificadas.
-- [ ] **S2.2** Implementar registro mensual, corrección, confirmación y reversión transaccionales.
+- [x] **S2.2** Implementar registro mensual, corrección, confirmación y reversión transaccionales. 29 pruebas nuevas, incluidas operaciones simultáneas sobre SQLite.
 - [ ] **S2.3** Exponer endpoints autenticados y resumen mensual; probar errores y concurrencia.
 - [ ] **S3.1** Añadir cliente API, tipos TypeScript y navegación «Servicios».
 - [ ] **S3.2** Implementar vista mensual, detalle, formularios y estados de carga/error/vacío.
@@ -133,3 +133,40 @@ SQLite; PostgreSQL real sigue pendiente. `git diff --check` sin problemas.
 S2.2 es la siguiente tarea: creación/corrección de registros mensuales y confirmación/
 reversión transaccional de pagos. El resumen mensual queda en S2.3. La interfaz sigue
 pendiente y no se reconstruyeron contenedores ni se migró la base personal en S2.1.
+
+### Avance S2.2: registros mensuales y pagos
+
+Se añadieron estos endpoints autenticados:
+
+| Método | Ruta | Comportamiento |
+| --- | --- | --- |
+| POST | `/utilities/{utility_id}/entries` | Crear período pendiente o histórico pagado; responde 201. |
+| PATCH | `/utilities/{utility_id}/entries/{entry_id}` | Corregir período, importe, vencimiento, notas y fecha de un pago existente. |
+| POST | `/utilities/{utility_id}/entries/{entry_id}/confirm` | Confirmar pendiente; `{}` usa hoy en Lima y el importe actual. |
+| POST | `/utilities/{utility_id}/entries/{entry_id}/undo` | Revertir pago, dejando pendiente con el mismo importe y período. |
+
+Crear recibe `year`, `month`, `amount` y opcionalmente `due_date`, `paid_date`, `notes`.
+Confirmar admite `amount` y `paid_date` opcionales. PATCH permite limpiar vencimiento
+y notas con null, pero no año, mes, monto ni fecha de pago. Para cambiar pendiente a
+pagado se usa confirmación; para volver a pendiente se usa reversión. La edición de
+un pago ya confirmado permite corregir su fecha e importe. No hay borrado de períodos.
+
+Reglas operativas: 409 para período duplicado, pago ya confirmado, reversión sin pago
+o creación de un período en servicio archivado. Un servicio archivado permite corregir,
+confirmar y revertir sus registros existentes. Reactivarlo permite crear más períodos.
+Un registro ajeno al servicio o inexistente devuelve 404; entradas inválidas devuelven
+422. Todos los endpoints exigen la autenticación existente.
+
+Las escrituras mensuales son transaccionales: bloqueo del servicio con FOR UPDATE en
+PostgreSQL y BEGIN IMMEDIATE antes de leer en SQLite. Los cambios de período verifican
+duplicados antes de editar. Errores revierten la operación completa. La restricción
+única del esquema conserva una segunda defensa para los períodos.
+
+Verificación S2.2: **29 pruebas nuevas pasaron**, incluidas creación/confirmación/reversión
+simultáneas (una operación aceptada y otra con conflicto), pagos entre meses, correcciones,
+aislamiento entre servicios, archivo, autenticación, rollback y reapertura de conexiones.
+La suite completa pasó con **212 pruebas y 3 omitidas** de integración PostgreSQL.
+`git diff --check` sin problemas. PostgreSQL real sigue pendiente de S2.3/S4.
+
+Siguiente tarea: **S2.3**, resumen mensual y verificación de integración con PostgreSQL.
+No se reconstruyeron contenedores ni se migró la base personal en S2.2.

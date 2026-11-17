@@ -6,7 +6,10 @@ from fastapi import APIRouter, Depends, Request, status
 
 from app.auth import get_current_user
 from app.models.subscription import ErrorResponse
-from app.models.utility import Utility, UtilityCreate, UtilityEntry, UtilityUpdate
+from app.models.utility import (
+    Utility, UtilityCreate, UtilityEntry, UtilityEntryCreate, UtilityEntryUpdate,
+    UtilityPaymentConfirmation, UtilityUpdate,
+)
 from app.services.utility_service import UtilityService
 
 
@@ -57,3 +60,50 @@ def list_entries(
 ) -> list[UtilityEntry]:
     """History newest period first, including archived services and pending entries."""
     return service.list_entries(str(utility_id))
+
+
+ENTRY_ERRORS = {404: {"model": ErrorResponse}, 409: {"model": ErrorResponse}}
+
+
+@router.post(
+    "/{utility_id}/entries", response_model=UtilityEntry,
+    status_code=status.HTTP_201_CREATED, responses=ENTRY_ERRORS,
+)
+def create_entry(
+    utility_id: UUID, data: UtilityEntryCreate,
+    service: UtilityService = Depends(get_service),
+) -> UtilityEntry:
+    return service.create_entry(str(utility_id), data)
+
+
+@router.patch(
+    "/{utility_id}/entries/{entry_id}", response_model=UtilityEntry, responses=ENTRY_ERRORS,
+)
+def update_entry(
+    utility_id: UUID, entry_id: UUID, data: UtilityEntryUpdate,
+    service: UtilityService = Depends(get_service),
+) -> UtilityEntry:
+    return service.update_entry(str(utility_id), str(entry_id), data)
+
+
+@router.post(
+    "/{utility_id}/entries/{entry_id}/confirm", response_model=UtilityEntry,
+    responses=ENTRY_ERRORS,
+)
+def confirm_payment(
+    utility_id: UUID, entry_id: UUID, data: UtilityPaymentConfirmation,
+    service: UtilityService = Depends(get_service),
+) -> UtilityEntry:
+    """An empty JSON object uses today's Lima date and the pending amount."""
+    return service.confirm_payment(str(utility_id), str(entry_id), data)
+
+
+@router.post(
+    "/{utility_id}/entries/{entry_id}/undo", response_model=UtilityEntry,
+    responses=ENTRY_ERRORS,
+)
+def undo_payment(
+    utility_id: UUID, entry_id: UUID, service: UtilityService = Depends(get_service),
+) -> UtilityEntry:
+    """Clear the payment date, retaining the final amount and monthly period."""
+    return service.undo_payment(str(utility_id), str(entry_id))

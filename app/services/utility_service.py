@@ -7,8 +7,13 @@ from uuid import uuid4
 from fastapi import HTTPException
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.models.utility import Utility, UtilityCreate, UtilityEntry, UtilityUpdate
-from app.repositories.utility_repository import UtilityRepository
+from app.models.utility import (
+    Utility, UtilityCreate, UtilityEntry, UtilityEntryCreate, UtilityEntryUpdate,
+    UtilityPaymentConfirmation, UtilityUpdate,
+)
+from app.repositories.utility_repository import (
+    UtilityRepository, UtilityNotFoundError, UtilityEntryConflictError,
+)
 
 
 T = TypeVar("T")
@@ -22,6 +27,10 @@ class UtilityService:
     def _run(operation: Callable[[], T]) -> T:
         try:
             return operation()
+        except UtilityNotFoundError as error:
+            raise HTTPException(status_code=404, detail=str(error)) from error
+        except UtilityEntryConflictError as error:
+            raise HTTPException(status_code=409, detail=str(error)) from error
         except SQLAlchemyError as error:
             raise HTTPException(
                 status_code=500, detail="No se pudo acceder al catálogo de servicios."
@@ -49,3 +58,17 @@ class UtilityService:
     def list_entries(self, utility_id: str) -> list[UtilityEntry]:
         self.get(utility_id)
         return self._run(lambda: self._repository.list_entries(utility_id))
+
+    def create_entry(self, utility_id: str, data: UtilityEntryCreate) -> UtilityEntry:
+        return self._run(lambda: self._repository.create_entry(utility_id, data))
+
+    def update_entry(self, utility_id: str, entry_id: str, data: UtilityEntryUpdate) -> UtilityEntry:
+        return self._run(lambda: self._repository.update_entry(utility_id, entry_id, data))
+
+    def confirm_payment(
+        self, utility_id: str, entry_id: str, data: UtilityPaymentConfirmation,
+    ) -> UtilityEntry:
+        return self._run(lambda: self._repository.confirm_payment(utility_id, entry_id, data))
+
+    def undo_payment(self, utility_id: str, entry_id: str) -> UtilityEntry:
+        return self._run(lambda: self._repository.undo_payment(utility_id, entry_id))

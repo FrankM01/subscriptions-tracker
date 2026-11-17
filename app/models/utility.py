@@ -93,3 +93,42 @@ class UtilityEntry(UtilityEntryCreate):
     @property
     def status(self) -> str:
         return "paid" if self.paid_date is not None else "pending"
+
+
+class UtilityEntryUpdate(BaseModel):
+    """Corrections preserve payment state; use confirm/undo to change it."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    year: int | None = Field(default=None, ge=1900, le=9999)
+    month: int | None = Field(default=None, ge=1, le=12)
+    amount: PersonalAmount | None = None
+    due_date: date | None = None
+    paid_date: date | None = None
+    notes: str | None = None
+
+    @field_validator("paid_date")
+    @classmethod
+    def validate_paid_date(cls, value: date | None) -> date | None:
+        return UtilityEntryCreate.payment_must_not_be_future(value)
+
+    @model_validator(mode="after")
+    def validate_update(self) -> "UtilityEntryUpdate":
+        if not self.model_fields_set:
+            raise ValueError("Incluye al menos un campo para actualizar.")
+        for field in ("year", "month", "amount", "paid_date"):
+            if field in self.model_fields_set and getattr(self, field) is None:
+                raise ValueError(f"{field} no puede ser null.")
+        return self
+
+
+class UtilityPaymentConfirmation(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    paid_date: date | None = None
+    amount: PersonalAmount | None = None
+
+    @field_validator("paid_date")
+    @classmethod
+    def validate_paid_date(cls, value: date | None) -> date | None:
+        return UtilityEntryCreate.payment_must_not_be_future(value)
