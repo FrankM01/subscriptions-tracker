@@ -74,7 +74,7 @@ principal incluye los totales mensuales de Servicios separados de las estimacion
 - [x] **S3.1** Añadir cliente API, tipos TypeScript y navegación «Servicios». Vista inicial de consulta conectada y verificada en escritorio/móvil.
 - [x] **S3.2** Implementar vista mensual, detalle, formularios y estados de carga/error/vacío. 25 pruebas frontend y recorrido real con API temporal verificados.
 - [x] **S3.3** Integrar bloque mensual en Resumen sin mezclar previsión con pagos reales. Estados y reintento independientes; 30 pruebas frontend aprobadas.
-- [ ] **S3.4** Probar flujo completo y revisar visualmente en escritorio y móvil.
+- [x] **S3.4** Probar flujo completo y revisar visualmente en escritorio y móvil. 232 pruebas Python con PostgreSQL, 30 frontend y 2 E2E aprobadas; recorrido integrado de Servicios verificado.
 - [ ] **S4.1** Respaldar PostgreSQL local antes de aplicar la migración.
 - [ ] **S4.2** Reconstruir contenedores locales y comprobar migración y persistencia tras reinicio.
 - [ ] **S4.3** Actualizar README y cerrar checklist con evidencia.
@@ -320,3 +320,22 @@ sin problemas. No se reejecutó PostgreSQL: el backend no cambió en esta tanda.
 Siguiente tarea: **S3.4**, verificación final del flujo integrado, regresión y revisión
 de escritorio/móvil antes de respaldar y actualizar el entorno personal. Cambios S3.3
 sin commit en `feature/utilities-module`; Docker y la base personal siguen sin actualizarse.
+
+### Avance S3.4: verificación final del flujo integrado
+
+Código verificado: `6a8e324`, rama `feature/utilities-module`. Resultado: **232 pruebas
+Python con PostgreSQL 18 aprobadas sin omisiones, 30 frontend y 2 E2E existentes aprobadas**;
+TypeScript/build correctos. No se necesitaron correcciones funcionales.
+
+Se repitió el recorrido real de Servicios desde Resumen con aserciones sobre confirmación,
+reversión, totales actualizados, persistencia al recargar, conservación de historial,
+validación de importes/fechas, errores con recuperación, meses vacíos y rutas directas.
+Revisión visual de escritorio y móvil sin desbordamiento horizontal. El navegador requerido
+por las E2E se instaló en `/tmp`; no se cambiaron dependencias del proyecto.
+
+Evidencia, comandos y límites: [Servicios: verificación integrada](servicios-verificacion.md).
+Nota equivalente en el vault: [[Servicios - Verificacion]]. Las E2E web usan SQLite temporal;
+PostgreSQL y JWT se verificaron en integraciones separadas, sin login real de Keycloak.
+
+Siguiente tarea: **S4.1**, respaldo verificado de PostgreSQL local antes de migrar y
+reconstruir la app. No se actualizó el contenedor personal ni se modificaron sus datos.

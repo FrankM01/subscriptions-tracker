@@ -133,7 +133,9 @@ pagadas para el período actual de Lima y acceso directo al mismo mes en Servici
 estados de carga, error y reintento son independientes de Suscripciones. Las estimaciones
 de suscripciones se mantienen separadas; no se calcula todavía un saldo financiero.
 Frontend: 30 pruebas aprobadas, TypeScript/build correctos y revisión real con API temporal
-en escritorio/móvil. La verificación final del flujo integrado queda en S3.4.
+en escritorio/móvil. S3.4 completada: 232 pruebas Python con PostgreSQL 18, 30 frontend y
+2 E2E existentes aprobadas, además del recorrido integrado de Servicios. Evidencia y
+límites: [verificación de Servicios](docs/servicios-verificacion.md).
 
 El backend se verificó con SQLite y PostgreSQL 18 temporales,
 incluidas operaciones simultáneas: 232 pruebas aprobadas, sin omisiones. No se ha aplicado
