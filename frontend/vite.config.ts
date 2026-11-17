@@ -9,6 +9,7 @@ export default defineConfig({
     proxy: {
       "/auth": "http://127.0.0.1:8000",
       "/subscriptions": "http://127.0.0.1:8000",
+      "/utilities": "http://127.0.0.1:8000",
     },
   },
   test: {

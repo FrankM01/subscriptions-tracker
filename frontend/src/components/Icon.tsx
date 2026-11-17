@@ -1,10 +1,11 @@
 import type { ReactNode, SVGProps } from "react";
 
-type IconName = "overview" | "subscriptions" | "arrow" | "plus" | "close" | "calendar" | "check" | "chevron";
+type IconName = "overview" | "subscriptions" | "utilities" | "arrow" | "plus" | "close" | "calendar" | "check" | "chevron";
 
 const paths: Record<IconName, ReactNode> = {
   overview: <><rect x="3" y="3" width="8" height="8" rx="2" /><rect x="14" y="3" width="7" height="5" rx="2" /><rect x="14" y="11" width="7" height="10" rx="2" /><rect x="3" y="14" width="8" height="7" rx="2" /></>,
   subscriptions: <><rect x="4" y="3" width="16" height="18" rx="3" /><path d="M8 8h8M8 12h8M8 16h5" /></>,
+  utilities: <><path d="m3 10 9-7 9 7M5 9v12h14V9" /><path d="m13 10-4 6h4l-2 4 5-7h-4l1-3Z" /></>,
   arrow: <><path d="M5 12h14M13 6l6 6-6 6" /></>,
   plus: <><path d="M12 5v14M5 12h14" /></>,
   close: <><path d="m6 6 12 12M18 6 6 18" /></>,

@@ -44,3 +44,64 @@ export interface RenewalConfirmationInput {
   paid_date?: string;
   paid_amount?: string;
 }
+
+export interface Utility {
+  utility_id: string;
+  name: string;
+  provider: string | null;
+  is_active: boolean;
+}
+
+export interface UtilityInput {
+  name: string;
+  provider?: string | null;
+}
+
+export interface UtilityUpdateInput extends Partial<UtilityInput> {
+  is_active?: boolean;
+}
+
+export interface UtilityEntryInput {
+  year: number;
+  month: number;
+  amount: string;
+  due_date?: string | null;
+  paid_date?: string | null;
+  notes?: string | null;
+}
+
+export interface UtilityEntry {
+  entry_id: string;
+  utility_id: string;
+  year: number;
+  month: number;
+  amount: string;
+  due_date: string | null;
+  paid_date: string | null;
+  notes: string | null;
+  status: "pending" | "paid";
+}
+
+// Only notes/due_date may be cleared; use undo to clear a payment date.
+export interface UtilityEntryUpdateInput {
+  year?: number;
+  month?: number;
+  amount?: string;
+  due_date?: string | null;
+  paid_date?: string;
+  notes?: string | null;
+}
+
+export interface UtilityPaymentConfirmationInput {
+  amount?: string | null;
+  paid_date?: string | null;
+}
+
+export interface UtilityMonthlySummary {
+  year: number;
+  month: number;
+  pending_count: number;
+  paid_count: number;
+  total_pending: string;
+  total_paid: string;
+}

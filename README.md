@@ -116,7 +116,12 @@ El resumen requiere año y mes y devuelve `year`, `month`, `pending_count`, `pai
 servicios archivados y agrupa por período del servicio, independientemente de la fecha
 real del pago. Meses sin registros devuelven cero; no se generan deudas automáticamente.
 
-La interfaz está pendiente. El backend se verificó con SQLite y PostgreSQL 18 temporales,
+La web ya incluye «Servicios» en la navegación de escritorio/móvil y una vista de consulta
+del catálogo en `/servicios`, con estados de carga, vacío y error con reintento. La gestión
+de servicios, vista mensual, detalle y formularios de pagos siguen pendientes de S3.2.
+El cliente TypeScript ya cubre todos los endpoints del módulo.
+
+El backend se verificó con SQLite y PostgreSQL 18 temporales,
 incluidas operaciones simultáneas: 232 pruebas aprobadas, sin omisiones. No se ha aplicado
 todavía a la base personal ni reconstruido el contenedor local. Antes de actualizar la
 app local, respaldar PostgreSQL: al arrancar la imagen nueva, Alembic aplica la migración
@@ -358,7 +363,7 @@ cd frontend
 pnpm dev
 ```
 
-Abre `http://127.0.0.1:5173`. Vite reenvía las llamadas `/subscriptions` a la API local.
+Abre `http://127.0.0.1:5173`. Vite reenvía `/auth`, `/subscriptions` y `/utilities` a la API local.
 
 ## Pruebas del frontend
 

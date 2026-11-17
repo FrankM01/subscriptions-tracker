@@ -6,6 +6,8 @@ import type {
   SubscriptionInput,
   SubscriptionUpdateInput,
   Summary,
+  Utility, UtilityInput, UtilityUpdateInput, UtilityEntry, UtilityEntryInput,
+  UtilityEntryUpdateInput, UtilityPaymentConfirmationInput, UtilityMonthlySummary,
 } from "./types";
 import { getAccessToken } from "./auth";
 
@@ -78,4 +80,22 @@ export const api = {
     }),
   undoRenewal: (id: string) =>
     request<Subscription>(`/subscriptions/${id}/renewals/undo`, { method: "POST" }),
+  listUtilities: (isActive?: boolean) =>
+    request<Utility[]>(`/utilities${isActive === undefined ? "" : `?is_active=${isActive}`}`),
+  getUtility: (id: string) => request<Utility>(`/utilities/${id}`),
+  createUtility: (input: UtilityInput) =>
+    request<Utility>("/utilities", { method: "POST", body: JSON.stringify(input) }),
+  updateUtility: (id: string, input: UtilityUpdateInput) =>
+    request<Utility>(`/utilities/${id}`, { method: "PATCH", body: JSON.stringify(input) }),
+  listUtilityEntries: (id: string) => request<UtilityEntry[]>(`/utilities/${id}/entries`),
+  createUtilityEntry: (id: string, input: UtilityEntryInput) =>
+    request<UtilityEntry>(`/utilities/${id}/entries`, { method: "POST", body: JSON.stringify(input) }),
+  updateUtilityEntry: (id: string, entryId: string, input: UtilityEntryUpdateInput) =>
+    request<UtilityEntry>(`/utilities/${id}/entries/${entryId}`, { method: "PATCH", body: JSON.stringify(input) }),
+  confirmUtilityPayment: (id: string, entryId: string, input: UtilityPaymentConfirmationInput = {}) =>
+    request<UtilityEntry>(`/utilities/${id}/entries/${entryId}/confirm`, { method: "POST", body: JSON.stringify(input) }),
+  undoUtilityPayment: (id: string, entryId: string) =>
+    request<UtilityEntry>(`/utilities/${id}/entries/${entryId}/undo`, { method: "POST" }),
+  getUtilityMonthlySummary: (year: number, month: number) =>
+    request<UtilityMonthlySummary>(`/utilities/summary?${new URLSearchParams({ year: String(year), month: String(month) })}`),
 };

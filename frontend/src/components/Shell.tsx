@@ -20,6 +20,9 @@ export function Shell() {
           <NavLink to="/suscripciones" className={({ isActive }) => `nav-link${isActive ? " active" : ""}`}>
             <Icon name="subscriptions" /><span>Suscripciones</span>
           </NavLink>
+          <NavLink to="/servicios" className={({ isActive }) => `nav-link${isActive ? " active" : ""}`}>
+            <Icon name="utilities" /><span>Servicios</span>
+          </NavLink>
         </nav>
         <div className="sidebar-bottom">
           <span className="local-dot" />
@@ -45,6 +48,9 @@ export function Shell() {
         </NavLink>
         <NavLink to="/suscripciones" className={({ isActive }) => `mobile-nav-link${isActive ? " active" : ""}`}>
           <Icon name="subscriptions" /><span>Suscripciones</span>
+        </NavLink>
+        <NavLink to="/servicios" className={({ isActive }) => `mobile-nav-link${isActive ? " active" : ""}`}>
+          <Icon name="utilities" /><span>Servicios</span>
         </NavLink>
       </nav>
     </div>

@@ -8,6 +8,45 @@ afterEach(() => {
 });
 
 describe("API client", () => {
+  it("keeps the archived-service filter and uses the authenticated utility API", async () => {
+    vi.spyOn(auth, "getAccessToken").mockResolvedValue("utility-token");
+    const fetchMock = vi.fn().mockResolvedValue(new Response("[]", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    await api.listUtilities(false);
+    expect(fetchMock).toHaveBeenCalledWith("/utilities?is_active=false", expect.objectContaining({
+      headers: { Authorization: "Bearer utility-token" },
+    }));
+  });
+
+  it("preserves decimal strings and explicit nulls when correcting a monthly entry", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    await api.updateUtilityEntry("utility-id", "entry-id", { amount: "45.10", due_date: null, notes: null });
+    expect(fetchMock).toHaveBeenCalledWith("/utilities/utility-id/entries/entry-id", expect.objectContaining({
+      method: "PATCH", body: JSON.stringify({ amount: "45.10", due_date: null, notes: null }),
+    }));
+  });
+
+  it("sends an empty confirmation command to use the pending amount and today's date", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    await api.confirmUtilityPayment("utility-id", "entry-id");
+    expect(fetchMock).toHaveBeenCalledWith("/utilities/utility-id/entries/entry-id/confirm", expect.objectContaining({
+      method: "POST", body: "{}",
+    }));
+  });
+
+  it("requests the selected service period and preserves payment conflict details", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    await api.getUtilityMonthlySummary(2025, 11);
+    expect(fetchMock).toHaveBeenCalledWith("/utilities/summary?year=2025&month=11", expect.anything());
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({ detail: "El pago ya está confirmado." }), { status: 409 }));
+    await expect(api.confirmUtilityPayment("utility-id", "entry-id")).rejects.toMatchObject({
+      status: 409, message: "El pago ya está confirmado.",
+    });
+  });
+
   it("uses the renewal API and sends the expected period identifier", async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ renewal_id: 7 }), { status: 201 }));
     vi.stubGlobal("fetch", fetchMock);

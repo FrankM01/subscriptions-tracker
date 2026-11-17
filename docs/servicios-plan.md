@@ -47,7 +47,8 @@ nombres vacíos, meses inválidos, montos no positivos y campos ajenos al contra
 
 API implementada: catálogo y registros bajo `/utilities`, con detalle, edición/archivo,
 historial, confirmación/reversión y resumen mensual; autenticación OIDC existente.
-El catálogo no tiene eliminación permanente en v1. La interfaz sigue pendiente.
+El catálogo no tiene eliminación permanente en v1. Ya hay navegación y catálogo web
+de consulta; los formularios de gestión siguen pendientes de S3.2.
 
 ## Experiencia prevista
 
@@ -69,7 +70,7 @@ El catálogo no tiene eliminación permanente en v1. La interfaz sigue pendiente
 - [x] **S2.1** Implementar repositorio y servicio: catálogo, archivo/reactivación e historial. Endpoints autenticados y 22 pruebas nuevas verificadas.
 - [x] **S2.2** Implementar registro mensual, corrección, confirmación y reversión transaccionales. 29 pruebas nuevas, incluidas operaciones simultáneas sobre SQLite.
 - [x] **S2.3** Exponer endpoints autenticados y resumen mensual; probar errores y concurrencia. Suite completa con PostgreSQL 18: 232 pruebas aprobadas, sin omisiones.
-- [ ] **S3.1** Añadir cliente API, tipos TypeScript y navegación «Servicios».
+- [x] **S3.1** Añadir cliente API, tipos TypeScript y navegación «Servicios». Vista inicial de consulta conectada y verificada en escritorio/móvil.
 - [ ] **S3.2** Implementar vista mensual, detalle, formularios y estados de carga/error/vacío.
 - [ ] **S3.3** Integrar bloque mensual en Resumen sin mezclar previsión con pagos reales.
 - [ ] **S3.4** Probar flujo completo y revisar visualmente en escritorio y móvil.
@@ -218,3 +219,32 @@ de integración crea y elimina su propio esquema. Puede recibir argumentos de py
 
 Siguiente tarea: **S3.1**, cliente API, tipos TypeScript y navegación «Servicios».
 La app local sigue con su imagen anterior y la base personal sigue sin migrarse.
+
+### Avance S3.1: integración del frontend y navegación
+
+Se añadieron tipos TypeScript para catálogo, registros mensuales, correcciones,
+confirmación de pago y resumen, respetando campos opcionales/null del backend y
+conservando importes como cadenas decimales. El cliente API cubre todas las operaciones
+de Servicios y reutiliza la autenticación, renovación de token y errores existentes.
+El filtro `is_active=false` se envía correctamente y confirmar sin datos envía `{}`.
+
+«Servicios» aparece en la barra lateral y en la navegación móvil de tres columnas.
+La ruta `/servicios` abre una vista inicial de solo consulta del catálogo, con nombre,
+proveedor y estado activo/archivado; maneja carga, catálogo vacío, error y reintento.
+No muestra formularios ni acciones de gestión: corresponden a S3.2. Se mantiene el
+sistema visual existente. La pestaña del navegador se llama «Control Budget».
+
+FastAPI sirve `/servicios` al entrar directamente o recargar; los endpoints desconocidos
+de `/utilities` conservan sus errores JSON. Vite reenvía `/utilities` a la API en desarrollo.
+
+Verificación: **18 pruebas frontend aprobadas**, TypeScript y build correctos; regresión
+Python **224 aprobadas, 8 omitidas** porque esta ejecución no configuró PostgreSQL
+(su verificación completa de 232 pruebas quedó registrada en S2.3). Navegador Chromium
+con base SQLite temporal y datos sintéticos: vista de escritorio 1440×960, móvil 390×844,
+entrada directa, navegación a Suscripciones y regreso; sin desbordamiento horizontal en
+móvil (ancho del documento = 390). Capturas locales en `output/playwright/`, excluidas de
+Git. El detector visual solo señaló la fuente Inter preexistente; se preservó la identidad.
+
+El servidor de revisión y el navegador se cerraron; la base temporal se eliminó. No se
+actualizó Docker ni la base personal. Siguiente tarea: **S3.2**, vista mensual, detalle
+y formularios para gestionar servicios y pagos.

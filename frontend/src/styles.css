@@ -132,6 +132,13 @@ svg { width: 19px; height: 19px; flex: 0 0 auto; }
 .filter-tab span { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; color: inherit; background: rgba(255,255,255,.68); font-size: 9px; }
 .results-count { color: #96a099; font-size: 10px; }
 .subscription-list { padding: 0 20px; }
+.utility-catalog { margin: 0; padding: 0 20px; list-style: none; }
+.list-toolbar.utility-catalog-toolbar { flex-direction: row; align-items: center; min-height: 64px; }
+.utility-catalog-toolbar h2 { margin: 0; font-size: 18px; }
+.utility-catalog-row { display: flex; align-items: center; gap: 14px; padding: 20px 0; }
+.utility-catalog-row + .utility-catalog-row { border-top: 1px solid var(--line); }
+.utility-catalog-row .subscription-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.utility-catalog-row .status-badge { flex-shrink: 0; }
 .subscription-row { display: grid; grid-template-columns: 42px minmax(140px,1fr) minmax(96px,140px) 84px auto; align-items: center; gap: 14px; min-height: 82px; border-bottom: 1px solid #eef1ef; }
 .subscription-row:last-child { border-bottom: 0; }
 .subscription-name, .subscription-cost { display: grid; gap: 5px; min-width: 0; }
@@ -319,7 +326,7 @@ svg { width: 19px; height: 19px; flex: 0 0 auto; }
   .history-description small { font-size: 9px; }
   .history-amount { font-size: 10px; }
   .undo-button { grid-column: 2 / -1; justify-self: start; margin: -4px 0 8px; }
-  .mobile-nav { position: fixed; inset: auto 0 0; z-index: 20; display: grid; grid-template-columns: 1fr 1fr; padding: 7px max(20px, env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left)); border-top: 1px solid var(--line); background: rgba(255,255,255,.96); backdrop-filter: blur(12px); }
+  .mobile-nav { position: fixed; inset: auto 0 0; z-index: 20; display: grid; grid-template-columns: repeat(3, 1fr); padding: 7px max(20px, env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left)); border-top: 1px solid var(--line); background: rgba(255,255,255,.96); backdrop-filter: blur(12px); }
   .mobile-nav-link { display: grid; justify-items: center; gap: 4px; padding: 5px 0; color: #849088; font-size: 9px; font-weight: 600; }
   .mobile-nav-link svg { width: 19px; height: 19px; }
   .mobile-nav-link.active { color: var(--green); }

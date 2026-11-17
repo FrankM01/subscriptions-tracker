@@ -32,3 +32,4 @@ frontend/dist/
 frontend/playwright-report/
 frontend/test-results/
 .playwright-cli/
+output/playwright/
