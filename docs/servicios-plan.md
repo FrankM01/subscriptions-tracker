@@ -66,7 +66,7 @@ autenticación OIDC existente. El catálogo no tendrá eliminación permanente e
 - [x] **S1.2** Añadir migración aditiva y reversible, sin modificar las tablas existentes.
 - [x] **S1.3** Definir contratos iniciales y validaciones Pydantic.
 - [x] **S1.4** Verificar migración, restricciones, persistencia y regresión en SQLite temporal; registrar resultados. PostgreSQL real pendiente en S2.3/S4.
-- [ ] **S2.1** Implementar repositorio y servicio: catálogo, archivo/reactivación e historial.
+- [x] **S2.1** Implementar repositorio y servicio: catálogo, archivo/reactivación e historial. Endpoints autenticados y 22 pruebas nuevas verificadas.
 - [ ] **S2.2** Implementar registro mensual, corrección, confirmación y reversión transaccionales.
 - [ ] **S2.3** Exponer endpoints autenticados y resumen mensual; probar errores y concurrencia.
 - [ ] **S3.1** Añadir cliente API, tipos TypeScript y navegación «Servicios».
@@ -103,3 +103,33 @@ temporal. No se verificó todavía contra PostgreSQL real ni se modificó la bas
 Los cambios se encuentran sin commit en la rama existente `feature/T6-aws-console-lab`.
 Antes de publicar este módulo, separarlo del trabajo del laboratorio AWS según el
 flujo de ramas del proyecto.
+
+### Avance S2.1: catálogo e historial de consulta
+
+Implementados repositorio y servicio persistentes, y los siguientes endpoints con
+la dependencia OIDC existente:
+
+| Método | Ruta | Comportamiento |
+| --- | --- | --- |
+| POST | `/utilities` | Crear con nombre y proveedor opcional; activo por defecto. |
+| GET | `/utilities` | Listar todos; `?is_active=true` o `false` filtra por estado. |
+| GET | `/utilities/{utility_id}` | Consultar el servicio, incluso archivado. |
+| PATCH | `/utilities/{utility_id}` | Editar nombre/proveedor o archivar/reactivar con `is_active`. |
+| GET | `/utilities/{utility_id}/entries` | Consultar períodos registrados, del más reciente al más antiguo. |
+
+PATCH actualiza solo campos enviados: `provider: null` o vacío limpia el proveedor;
+nombre vacío, `name: null`, `is_active: null`, estados no booleanos y objetos vacíos
+se rechazan con 422. UUID inexistente devuelve 404; falta de autenticación, 401;
+errores de almacenamiento, 500 con mensaje público sin detalles SQL.
+
+Archivar/reactivar no modifica importes, fechas ni registros mensuales. El historial
+incluye pendientes y pagados del servicio solicitado; un servicio sin registros
+devuelve una lista vacía. No existe endpoint de eliminación permanente.
+
+Verificación S2.1: **22 pruebas nuevas pasaron; suite completa: 183 pasaron y 3 se
+omitieron** por falta de configuración de integración PostgreSQL. Bases temporales
+SQLite; PostgreSQL real sigue pendiente. `git diff --check` sin problemas.
+
+S2.2 es la siguiente tarea: creación/corrección de registros mensuales y confirmación/
+reversión transaccional de pagos. El resumen mensual queda en S2.3. La interfaz sigue
+pendiente y no se reconstruyeron contenedores ni se migró la base personal en S2.1.

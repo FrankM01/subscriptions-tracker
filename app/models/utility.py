@@ -5,7 +5,7 @@ from decimal import Decimal
 from typing import Annotated
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator, model_validator
 
 from app.utils.dates import today_in_lima
 
@@ -36,6 +36,35 @@ class UtilityCreate(BaseModel):
 class Utility(UtilityCreate):
     utility_id: UUID
     is_active: bool = True
+
+
+class UtilityUpdate(BaseModel):
+    """Partial catalog update; explicit null clears only the provider."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str | None = None
+    provider: str | None = None
+    is_active: bool | None = Field(default=None, strict=True)
+
+    @field_validator("name")
+    @classmethod
+    def normalize_name(cls, value: str | None) -> str | None:
+        return UtilityCreate.name_must_not_be_blank(value) if value is not None else None
+
+    @field_validator("provider")
+    @classmethod
+    def normalize_provider(cls, value: str | None) -> str | None:
+        return UtilityCreate.normalize_provider(value)
+
+    @model_validator(mode="after")
+    def validate_update(self) -> "UtilityUpdate":
+        if not self.model_fields_set:
+            raise ValueError("Incluye al menos un campo para actualizar.")
+        for field in ("name", "is_active"):
+            if field in self.model_fields_set and getattr(self, field) is None:
+                raise ValueError(f"{field} no puede ser null.")
+        return self
 
 
 class UtilityEntryCreate(BaseModel):

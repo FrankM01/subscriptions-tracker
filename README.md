@@ -81,6 +81,29 @@ más abajo.
 
 ## Documentación técnica
 
+### Módulo Servicios: backend en desarrollo
+
+El catálogo de servicios ya dispone de API autenticada con Keycloak:
+
+| Método | Ruta | Acción |
+| --- | --- | --- |
+| POST | `/utilities` | Crear con `name` y `provider` opcional. |
+| GET | `/utilities` | Listar todos; filtrar con `?is_active=true` o `false`. |
+| GET | `/utilities/{utility_id}` | Consultar un servicio. |
+| PATCH | `/utilities/{utility_id}` | Editar `name`, `provider` o `is_active`. |
+| GET | `/utilities/{utility_id}/entries` | Consultar historial por período descendente. |
+
+Para archivar, enviar `{"is_active": false}`; para reactivar, `{"is_active": true}`.
+Ambas operaciones conservan el historial. `provider: null` permite quitar el proveedor.
+No se permite eliminar servicios permanentemente. Las respuestas y validaciones están
+documentadas en OpenAPI (`/docs`) al ejecutar esta versión.
+
+La creación de registros mensuales, confirmación de pagos, resumen mensual e interfaz
+están pendientes. Este avance se verificó con bases temporales SQLite; no se ha aplicado
+todavía a la base personal ni reconstruido el contenedor local. Antes de actualizar la
+app local, respaldar PostgreSQL: al arrancar la imagen nueva, Alembic aplica la migración
+de servicios automáticamente. Plan y checklist: [Servicios](docs/servicios-plan.md).
+
 ## Entorno local con Docker Compose
 
 Docker Compose levanta la app web, PostgreSQL y Keycloak. PostgreSQL guarda la
