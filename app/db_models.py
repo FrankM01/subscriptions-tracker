@@ -77,3 +77,48 @@ class RenewalRecord(Base):
     resulting_anchor_day: Mapped[int] = mapped_column(Integer, nullable=False)
 
     subscription: Mapped[SubscriptionRecord] = relationship(back_populates="renewals")
+
+
+class UtilityRecord(Base):
+    """Personal utility catalog; archive rather than delete its history."""
+
+    __tablename__ = "utilities"
+    __table_args__ = (
+        CheckConstraint("length(trim(name)) > 0", name="ck_utilities_name_nonempty"),
+    )
+
+    utility_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+    provider: Mapped[str | None] = mapped_column(Text)
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default=true()
+    )
+    entries: Mapped[list["UtilityEntryRecord"]] = relationship(
+        back_populates="utility", passive_deletes="all"
+    )
+
+
+class UtilityEntryRecord(Base):
+    """One personal contribution per service/month; paid_date implies payment."""
+
+    __tablename__ = "utility_entries"
+    __table_args__ = (
+        UniqueConstraint("utility_id", "year", "month", name="uq_utility_entries_period"),
+        CheckConstraint("year BETWEEN 1900 AND 9999", name="ck_utility_entries_year"),
+        CheckConstraint("month BETWEEN 1 AND 12", name="ck_utility_entries_month"),
+        CheckConstraint("amount_cents > 0", name="ck_utility_entries_amount_positive"),
+    )
+
+    entry_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    utility_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("utilities.utility_id", ondelete="RESTRICT"),
+        nullable=False, index=True,
+    )
+    year: Mapped[int] = mapped_column(Integer, nullable=False)
+    month: Mapped[int] = mapped_column(Integer, nullable=False)
+    amount_cents: Mapped[int] = mapped_column(Integer, nullable=False)
+    due_date: Mapped[date | None] = mapped_column(Date)
+    paid_date: Mapped[date | None] = mapped_column(Date)
+    notes: Mapped[str | None] = mapped_column(Text)
+
+    utility: Mapped[UtilityRecord] = relationship(back_populates="entries")

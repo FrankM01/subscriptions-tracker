@@ -47,6 +47,8 @@ def test_initial_migration_creates_tables_and_constraints(tmp_path, monkeypatch)
             "alembic_version",
             "subscriptions",
             "renewals",
+            "utilities",
+            "utility_entries",
         }
         assert any(
             fk["options"].get("ondelete") == "CASCADE"
