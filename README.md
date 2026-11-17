@@ -116,10 +116,20 @@ El resumen requiere año y mes y devuelve `year`, `month`, `pending_count`, `pai
 servicios archivados y agrupa por período del servicio, independientemente de la fecha
 real del pago. Meses sin registros devuelven cero; no se generan deudas automáticamente.
 
-La web ya incluye «Servicios» en la navegación de escritorio/móvil y una vista de consulta
-del catálogo en `/servicios`, con estados de carga, vacío y error con reintento. La gestión
-de servicios, vista mensual, detalle y formularios de pagos siguen pendientes de S3.2.
-El cliente TypeScript ya cubre todos los endpoints del módulo.
+La web incluye «Servicios» en escritorio/móvil. En `/servicios` puedes crear servicios,
+elegir un mes y filtrar pendientes, pagados o servicios sin registro. Los totales incluyen
+servicios archivados. El detalle `/servicios/{utility_id}` conserva el historial y permite
+editar el servicio, archivarlo/reactivarlo, registrar tu monto mensual, cargar un pago
+histórico, corregir datos, confirmar pagos y volverlos a pendiente con confirmación explícita.
+Los errores mantienen los datos del formulario para corregirlos o reintentar.
+
+Al registrar otro período, el último pago aparece solo como referencia: ingresa el monto
+que te corresponde ahora. Se acepta coma o punto decimal, sin calcular el reparto. Los
+servicios archivados permiten corregir y liquidar registros existentes; hay que reactivarlos
+para registrar otro período. No se borran servicios ni períodos desde la interfaz.
+
+La integración con el Resumen principal queda pendiente de S3.3. Frontend: 25 pruebas
+aprobadas, TypeScript/build correctos y recorrido real con API temporal en escritorio/móvil.
 
 El backend se verificó con SQLite y PostgreSQL 18 temporales,
 incluidas operaciones simultáneas: 232 pruebas aprobadas, sin omisiones. No se ha aplicado

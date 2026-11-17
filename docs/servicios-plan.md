@@ -47,8 +47,9 @@ nombres vacíos, meses inválidos, montos no positivos y campos ajenos al contra
 
 API implementada: catálogo y registros bajo `/utilities`, con detalle, edición/archivo,
 historial, confirmación/reversión y resumen mensual; autenticación OIDC existente.
-El catálogo no tiene eliminación permanente en v1. Ya hay navegación y catálogo web
-de consulta; los formularios de gestión siguen pendientes de S3.2.
+El catálogo no tiene eliminación permanente en v1. La web ya permite gestionar servicios,
+consultar períodos e historial, y registrar/corregir/confirmar/revertir pagos. La integración
+del bloque de servicios en el Resumen principal queda pendiente de S3.3.
 
 ## Experiencia prevista
 
@@ -71,7 +72,7 @@ de consulta; los formularios de gestión siguen pendientes de S3.2.
 - [x] **S2.2** Implementar registro mensual, corrección, confirmación y reversión transaccionales. 29 pruebas nuevas, incluidas operaciones simultáneas sobre SQLite.
 - [x] **S2.3** Exponer endpoints autenticados y resumen mensual; probar errores y concurrencia. Suite completa con PostgreSQL 18: 232 pruebas aprobadas, sin omisiones.
 - [x] **S3.1** Añadir cliente API, tipos TypeScript y navegación «Servicios». Vista inicial de consulta conectada y verificada en escritorio/móvil.
-- [ ] **S3.2** Implementar vista mensual, detalle, formularios y estados de carga/error/vacío.
+- [x] **S3.2** Implementar vista mensual, detalle, formularios y estados de carga/error/vacío. 25 pruebas frontend y recorrido real con API temporal verificados.
 - [ ] **S3.3** Integrar bloque mensual en Resumen sin mezclar previsión con pagos reales.
 - [ ] **S3.4** Probar flujo completo y revisar visualmente en escritorio y móvil.
 - [ ] **S4.1** Respaldar PostgreSQL local antes de aplicar la migración.
@@ -101,9 +102,9 @@ Resultado de verificación: **25 pruebas iniciales pasaron**; suite Python compl
 `git diff --check` sin problemas. Las migraciones se ejecutaron solamente sobre SQLite
 temporal. No se verificó todavía contra PostgreSQL real ni se modificó la base personal.
 
-Los cambios se encuentran sin commit en la rama existente `feature/T6-aws-console-lab`.
-Antes de publicar este módulo, separarlo del trabajo del laboratorio AWS según el
-flujo de ramas del proyecto.
+Los primeros cinco commits se iniciaron en `feature/T6-aws-console-lab` y luego se
+separaron en `feature/utilities-module`, publicada en GitHub. La rama AWS local y remota
+volvió a `def47c2`, anterior al módulo. El desarrollo de Servicios continúa en su rama propia.
 
 ### Avance S2.1: catálogo e historial de consulta
 
@@ -248,3 +249,46 @@ Git. El detector visual solo señaló la fuente Inter preexistente; se preservó
 El servidor de revisión y el navegador se cerraron; la base temporal se eliminó. No se
 actualizó Docker ni la base personal. Siguiente tarea: **S3.2**, vista mensual, detalle
 y formularios para gestionar servicios y pagos.
+
+### Avance S3.2: gestión mensual, detalle y formularios
+
+Implementado sobre `feature/utilities-module`:
+
+- `/servicios`: selector mes/año, totales personales pendientes/pagados, filtros Todos,
+  Pendientes, Pagados y Sin registro este mes. Nombre, proveedor, activo/archivado, importe
+  y fecha de pago o vencimiento; acceso al detalle conservando el período en la URL.
+- Creación y edición de servicios con proveedor opcional; archivo/reactivación en detalle.
+- `/servicios/:utilityId?period=YYYY-MM`: período seleccionado, historial completo ordenado
+  por mes, último pago como referencia y acciones para cualquier período registrado.
+- Formulario mensual con período, mi monto, vencimiento y notas opcionales; permite cargar
+  pagos históricos con fecha real. No precarga el importe anterior ni calcula repartos.
+- Confirmación con monto pendiente y fecha de hoy en Lima, ambos editables; corrección del
+  período, monto, notas y fechas; reversión con confirmación explícita antes de volver a pendiente.
+- Formularios dentro de la página, errores que conservan los datos ingresados y campos/
+  botones deshabilitados mientras guardan. Se aceptan coma o punto decimal y se envían
+  cadenas decimales a la API. Se rechazan montos no positivos o de más de dos decimales.
+- Servicios archivados conservan historial y permiten liquidar/corregir registros previos;
+  registrar otro período exige reactivarlos. No existe eliminación permanente.
+- Estados de carga, error con reintento, catálogo/historial vacíos y servicio inexistente.
+  FastAPI sirve la entrada directa y recarga del detalle; endpoints API siguen separados.
+
+La lista usa el catálogo, el resumen mensual y el historial de cada servicio mediante los
+endpoints existentes. No se añadieron contratos API ni migraciones para esta etapa.
+
+Verificación: **25 pruebas frontend aprobadas**, TypeScript y build correctos. Las siete
+pruebas nuevas cubren registro histórico con fecha de otro mes, conflicto sin perder datos,
+bloqueo de doble envío, corrección de pago, reversión explícita, reactivación, servicio
+inexistente, filtros y cambio de período. Regresión Python: **224 aprobadas y 8 omitidas**
+(PostgreSQL no se reejecutó en S3.2; evidencia previa de 232 aprobadas en S2.3).
+
+Recorrido Chromium contra API real con SQLite temporal y datos ficticios: crear servicio,
+registrar monto con coma decimal, confirmar noviembre con pago en diciembre, corregir,
+deshacer, archivar/reactivar y comprobar bloqueo de nuevos períodos mientras está archivado.
+Al volver a la lista se verificaron filtros y totales actualizados. Revisión a 1440×960 y
+390×844; ancho del documento móvil = 390, sin desbordamiento horizontal. Capturas locales
+en `output/playwright/`, fuera de Git. Detector visual: solo advertencias de Inter preexistente.
+
+El servidor, navegador y base de revisión son temporales. La app Docker y la base personal
+siguen sin actualizarse. Cambios de esta tanda sin commit. Siguiente tarea: **S3.3**, bloque
+mensual de servicios en el Resumen, separado de las estimaciones de suscripciones. S3.4
+queda para la verificación final del flujo integrado antes de actualizar el entorno local.

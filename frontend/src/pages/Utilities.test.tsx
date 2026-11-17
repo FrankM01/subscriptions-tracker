@@ -1,9 +1,17 @@
-import { afterEach, expect, it, vi } from "vitest";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { App } from "../App";
 import { api, ApiError } from "../api";
 import * as auth from "../auth";
+import { todayInLima } from "../format";
+
+beforeEach(() => {
+  vi.spyOn(api, "getUtilityMonthlySummary").mockImplementation(async (year, month) => ({
+    year, month, pending_count: 0, paid_count: 0, total_pending: "0.00", total_paid: "0.00",
+  }));
+  vi.spyOn(api, "listUtilityEntries").mockResolvedValue([]);
+});
 
 afterEach(() => {
   cleanup();
@@ -53,4 +61,31 @@ it("allows retrying a failed load and clears the error after success", async () 
   expect(await screen.findByText("Aún no tienes servicios registrados")).toBeInTheDocument();
   await waitFor(() => expect(load).toHaveBeenCalledTimes(2));
   expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+});
+
+it("filters pending, paid and missing months while preserving the selected period in detail links", async () => {
+  const [year, month] = todayInLima().slice(0, 7).split("-").map(Number);
+  vi.spyOn(api, "listUtilities").mockResolvedValue([
+    { utility_id: "light", name: "Luz", provider: null, is_active: true },
+    { utility_id: "water", name: "Agua", provider: null, is_active: true },
+  ]);
+  vi.mocked(api.listUtilityEntries).mockImplementation(async (id) => id === "light" ? [{
+    entry_id: "pending", utility_id: id, year, month, amount: "45.10",
+    due_date: null, paid_date: null, notes: null, status: "pending",
+  }] : []);
+  renderServices();
+  await screen.findByRole("link", { name: "Ver Luz" });
+  const filter = screen.getByLabelText("Mostrar registros");
+  await userEvent.selectOptions(filter, "pending");
+  expect(screen.getByRole("link", { name: "Ver Luz" })).toHaveAttribute("href", `/servicios/light?period=${todayInLima().slice(0, 7)}`);
+  expect(screen.queryByRole("link", { name: "Ver Agua" })).not.toBeInTheDocument();
+  await userEvent.selectOptions(filter, "missing");
+  expect(screen.getByRole("link", { name: "Ver Agua" })).toBeInTheDocument();
+  await userEvent.selectOptions(filter, "paid");
+  expect(screen.getByText("No hay registros con este filtro")).toBeInTheDocument();
+  await userEvent.selectOptions(filter, "all");
+  fireEvent.change(screen.getByLabelText("Mes de servicios"), { target: { value: "2025-01" } });
+  await waitFor(() => expect(api.getUtilityMonthlySummary).toHaveBeenLastCalledWith(2025, 1));
+  await waitFor(() => expect(screen.getByRole("link", { name: "Ver Luz" })).toHaveAttribute("href", "/servicios/light?period=2025-01"));
+  expect(within(screen.getByRole("region", { name: "Catálogo de servicios" })).getAllByText("Sin registro")).toHaveLength(4);
 });

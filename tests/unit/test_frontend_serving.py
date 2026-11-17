@@ -25,6 +25,7 @@ def test_frontend_routes_serve_index_and_assets_without_capturing_api(tmp_path):
     assert client.get("/").text == "<html><div id='root'></div></html>"
     assert client.get("/suscripciones").status_code == 200
     assert client.get("/servicios").text == "<html><div id='root'></div></html>"
+    assert client.get("/servicios/abc-123?period=2025-11").status_code == 200
     assert client.get("/suscripciones/abc-123").status_code == 200
     assert client.get("/assets/app.js").text == "console.log('web');"
     assert client.get("/favicon.svg").headers["content-type"] == "image/svg+xml"
