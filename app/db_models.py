@@ -122,3 +122,59 @@ class UtilityEntryRecord(Base):
     notes: Mapped[str | None] = mapped_column(Text)
 
     utility: Mapped[UtilityRecord] = relationship(back_populates="entries")
+
+
+class DebtRecord(Base):
+    """Fixed agreement; declared previous payments have no invented history."""
+
+    __tablename__ = "debts"
+    __table_args__ = (
+        CheckConstraint("length(trim(name)) > 0", name="ck_debts_name_nonempty"),
+        CheckConstraint("length(trim(creditor)) > 0", name="ck_debts_creditor_nonempty"),
+        CheckConstraint("installment_amount_cents > 0", name="ck_debts_amount_positive"),
+        CheckConstraint("total_installments > 0", name="ck_debts_total_positive"),
+        CheckConstraint(
+            "previously_paid_installments BETWEEN 0 AND total_installments",
+            name="ck_debts_previous_range",
+        ),
+        CheckConstraint(
+            "(previously_paid_installments < total_installments AND first_due_date IS NOT NULL) "
+            "OR (previously_paid_installments = total_installments AND first_due_date IS NULL)",
+            name="ck_debts_first_due_date",
+        ),
+    )
+
+    debt_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+    creditor: Mapped[str] = mapped_column(Text, nullable=False)
+    installment_amount_cents: Mapped[int] = mapped_column(Integer, nullable=False)
+    total_installments: Mapped[int] = mapped_column(Integer, nullable=False)
+    previously_paid_installments: Mapped[int] = mapped_column(Integer, nullable=False)
+    first_due_date: Mapped[date | None] = mapped_column(Date)
+    notes: Mapped[str | None] = mapped_column(Text)
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default=true(),
+    )
+    installments: Mapped[list["DebtInstallmentRecord"]] = relationship(
+        back_populates="debt", passive_deletes="all",
+    )
+
+
+class DebtInstallmentRecord(Base):
+    __tablename__ = "debt_installments"
+    __table_args__ = (
+        UniqueConstraint("debt_id", "number", name="uq_debt_installments_number"),
+        CheckConstraint("number > 0", name="ck_debt_installments_number_positive"),
+        CheckConstraint("amount_cents > 0", name="ck_debt_installments_amount_positive"),
+    )
+
+    installment_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    debt_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("debts.debt_id", ondelete="RESTRICT"),
+        nullable=False, index=True,
+    )
+    number: Mapped[int] = mapped_column(Integer, nullable=False)
+    amount_cents: Mapped[int] = mapped_column(Integer, nullable=False)
+    due_date: Mapped[date] = mapped_column(Date, nullable=False)
+    paid_date: Mapped[date | None] = mapped_column(Date)
+    debt: Mapped[DebtRecord] = relationship(back_populates="installments")
