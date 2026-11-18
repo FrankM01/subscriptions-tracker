@@ -82,17 +82,20 @@ más abajo.
 
 ## Documentación técnica
 
-### Gastos diarios: registro e historial
+### Gastos diarios: registro y análisis mensual
 
 La API autenticada `/expenses` permite registrar, editar, anular y restaurar
 gastos con cantidad e importe total independientes. `/expense-categories`
 administra categorías y subcategorías. El resumen mensual prepara los totales
 y series de los gráficos. En **Gastos diarios** puedes registrar, editar,
-anular/restaurar movimientos y administrar sus categorías. Los gráficos y el
-resumen del dashboard corresponden a G4.
+anular/restaurar movimientos y administrar sus categorías. La vista **Análisis**
+comparte los filtros de mes, categoría, subcategoría y descripción; muestra
+barras por clasificación y evolución diaria/acumulada, con tablas accesibles.
+El dashboard incluye el total de gastos vigentes del mes en un bloque separado.
 Consulta el [plan de Gastos diarios](docs/gastos-diarios-plan.md) y el
 [contrato y pruebas de la API](docs/gastos-diarios-api.md), además de la
-[guía de la interfaz](docs/gastos-diarios-interfaz.md).
+[guía de registro](docs/gastos-diarios-interfaz.md) y la
+[guía de análisis mensual](docs/gastos-diarios-analisis.md).
 
 ### Módulo Deudas: cuotas mensuales
 

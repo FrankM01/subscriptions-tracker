@@ -462,3 +462,46 @@ svg { width: 19px; height: 19px; flex: 0 0 auto; }
   .mobile-nav { padding-inline: 8px; }
   .mobile-nav-link { font-size: 8px; }
 }
+
+.expense-views { display: flex; gap: 8px; margin: 0 0 24px; }
+.expense-views [aria-current="page"], .expense-mode [aria-pressed="true"] { background: var(--primary-soft, #e5f3ee); color: #086351; border-color: #a9cec3; }
+.expense-analysis { background: white; border: 1px solid var(--border, #e1e7e4); border-radius: 16px; overflow: hidden; }
+.expense-analysis-total { display: flex; justify-content: space-between; gap: 24px; padding: 24px; }
+.expense-analysis-total h2 { font-size: 20px; margin: 0 0 8px; }
+.expense-analysis-total p { max-width: 65ch; color: #56665f; margin: 0; }
+.expense-analysis-total > div:last-child { display: grid; gap: 6px; text-align: right; flex-shrink: 0; }
+.expense-analysis-total strong { font-size: 28px; font-variant-numeric: tabular-nums; }
+.expense-analysis-total span { color: #56665f; }
+.expense-chart { padding: 24px; border-top: 1px solid var(--border, #e1e7e4); }
+.expense-chart h3 { margin: 0 0 20px; font-size: 18px; }
+.expense-bars { list-style: none; margin: 0; padding: 0; display: grid; gap: 20px; }
+.expense-bars li > div { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 8px; }
+.expense-bars span { overflow-wrap: anywhere; }
+.expense-bars strong { flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.expense-bars svg { width: 100%; height: 12px; display: block; }
+.expense-bar-track { fill: #edf2ef; }
+.expense-bar-fill, .expense-point { fill: #117b67; }
+.expense-chart-data { margin-top: 24px; }
+.expense-chart-data summary { cursor: pointer; color: #086351; min-height: 44px; padding: 12px 0; font-weight: 600; }
+.expense-table-wrap { overflow-x: auto; }
+.expense-chart table { border-collapse: collapse; width: 100%; font-size: 13px; }
+.expense-chart caption { text-align: left; padding: 12px 0; color: #56665f; }
+.expense-chart th, .expense-chart td { padding: 12px 8px; border-bottom: 1px solid #e1e7e4; text-align: right; font-variant-numeric: tabular-nums; }
+.expense-chart th:first-child { text-align: left; overflow-wrap: anywhere; }
+.expense-chart-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+.expense-chart-heading h3 { margin: 0; }
+.expense-mode { display: flex; gap: 8px; }
+.expense-timeline { display: block; width: 100%; height: auto; margin-top: 24px; }
+.expense-chart-scale, .expense-chart-days { color: #42574d; font-size: 12px; }
+.expense-chart-scale { margin: 20px 0 0; }
+.expense-chart-days { display: flex; justify-content: space-between; margin: 0 6.25%; }
+.expense-axis { stroke: #dce5df; stroke-width: 1; }
+.expense-line { fill: none; stroke: #117b67; stroke-width: 2.5; stroke-linejoin: round; }
+@media (max-width: 600px) {
+  .expense-analysis-total { flex-direction: column; padding: 20px 16px; gap: 16px; }
+  .expense-analysis-total > div:last-child { text-align: left; }
+  .expense-chart { padding: 24px 16px; }
+  .expense-chart .button { min-height: 44px; }
+  .expense-chart table { font-size: 12px; }
+  .expense-chart th, .expense-chart td { padding: 12px 4px; }
+}

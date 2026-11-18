@@ -4,6 +4,7 @@ import { api, ApiError } from "../api";
 import { EmptyState, ErrorState, LoadingState } from "../components/Feedback";
 import { Icon } from "../components/Icon";
 import { UtilityDashboardSummary } from "../components/UtilityDashboardSummary";
+import { ExpenseDashboardSummary } from "../components/ExpenseDashboardSummary";
 import { DebtDashboardSummary } from "../components/DebtDashboardSummary";
 import { formatDate, formatMoney, renewalStatus } from "../format";
 import type { RenewalAlert, Subscription, Summary } from "../types";
@@ -42,7 +43,7 @@ export function Dashboard() {
   return (
     <>
       <div className="page-heading dashboard-heading">
-        <div><h1>Resumen</h1><p>Tus suscripciones, servicios y cuotas de deudas en un solo lugar.</p></div>
+        <div><h1>Resumen</h1><p>Tus suscripciones, servicios, deudas y gastos diarios en un solo lugar.</p></div>
         <Link className="button button-primary" to="/suscripciones"><Icon name="plus" />Administrar suscripciones</Link>
       </div>
       {error && <ErrorState message={error} onRetry={() => void load()} />}
@@ -60,6 +61,7 @@ export function Dashboard() {
 
       <UtilityDashboardSummary />
       <DebtDashboardSummary />
+      <ExpenseDashboardSummary />
 
       {!loading && !error && (
         <>

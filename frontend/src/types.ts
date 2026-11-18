@@ -209,3 +209,31 @@ export interface ExpenseCategoryUpdateInput {
   name?: string;
   is_active?: boolean;
 }
+
+export type ExpenseSummaryFilters = Pick<ExpenseFilters, "year" | "month" | "category_id" | "subcategory_id" | "search">;
+
+export interface ExpenseGroupTotal {
+  category_id: string;
+  category_name: string;
+  subcategory_id: string | null;
+  subcategory_name: string | null;
+  count: number;
+  total_amount: string;
+}
+
+export interface ExpenseDayTotal {
+  expense_date: string;
+  count: number;
+  total_amount: string;
+  cumulative_amount: string;
+}
+
+export interface ExpenseMonthlySummary {
+  year: number;
+  month: number;
+  count: number;
+  total_amount: string;
+  categories: ExpenseGroupTotal[];
+  subcategories: ExpenseGroupTotal[];
+  days: ExpenseDayTotal[];
+}

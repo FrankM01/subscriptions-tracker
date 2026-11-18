@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { api, ApiError } from "../api";
+import { ExpenseAnalysis } from "../components/ExpenseAnalysis";
 import { ExpenseForm } from "../components/ExpenseForms";
 import { EmptyState, ErrorState, LoadingState } from "../components/Feedback";
 import { Icon } from "../components/Icon";
@@ -15,6 +16,7 @@ const PAGE_SIZE = 50;
 export function Expenses() {
   const [params, setParams] = useSearchParams();
   const period = parseUtilityPeriod(params.get("period")) ? params.get("period")! : todayInLima().slice(0, 7);
+  const analysis = params.get("view") === "analysis";
   const categoryId = params.get("category_id") ?? "";
   const subcategoryId = params.get("subcategory_id") ?? "";
   const search = params.get("search") ?? "";
@@ -34,6 +36,7 @@ export function Expenses() {
   useEffect(() => { setSearchDraft(search); }, [search]);
 
   useEffect(() => {
+    if (analysis) return;
     let active = true;
     setLoading(true); setError("");
     const selected = parseUtilityPeriod(period)!;
@@ -46,7 +49,7 @@ export function Expenses() {
     }).catch((caught: unknown) => { if (active) setError(caught instanceof ApiError ? caught.message : "No se pudieron cargar los gastos."); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [period, categoryId, subcategoryId, search, state, page, revision, setParams]);
+  }, [analysis, period, categoryId, subcategoryId, search, state, page, revision, setParams]);
 
   function changeFilters(fields: Record<string, string>) {
     setNotice("");
@@ -96,19 +99,23 @@ export function Expenses() {
       {actionError && <div className="form-error" role="alert">{actionError}</div>}
       <div className="form-actions"><button className="button button-quiet" disabled={busy} type="button" onClick={() => { setEditor(null); setActionError(""); }}>Cancelar</button><button className="button button-primary" disabled={busy} type="button" onClick={() => void changeState(editor.expense, editor.kind === "restore")}>{busy ? "Guardando…" : editor.kind === "void" ? "Confirmar anulación" : "Restaurar gasto"}</button></div>
     </section>}
+    <nav className="expense-views" aria-label="Vistas de gastos">
+      <button className="button button-quiet" type="button" disabled={disabled} aria-current={!analysis ? "page" : undefined} onClick={() => changeFilters({ view: "" })}>Movimientos</button>
+      <button className="button button-quiet" type="button" disabled={disabled} aria-current={analysis ? "page" : undefined} onClick={() => changeFilters({ view: "analysis" })}>Análisis</button>
+    </nav>
     <section className="expense-filters" aria-label="Filtros de gastos">
       <div className="utility-controls">
         <label className="field"><span>Mes de gastos</span><input required type="month" min="1900-01" max="9999-12" disabled={disabled} value={period} onChange={(event) => { if (parseUtilityPeriod(event.target.value)) changeFilters({ period: event.target.value }); }} /></label>
         <label className="field"><span>Filtrar categoría</span><select disabled={disabled || catalog.loading || !!catalog.error} value={categoryId} onChange={(event) => changeFilters({ category_id: event.target.value, subcategory_id: "" })}><option value="">Todas las categorías</option>{catalog.categories.map((category) => <option key={category.category_id} value={category.category_id}>{category.name}{!category.is_active ? " (archivada)" : ""}</option>)}</select></label>
         <label className="field"><span>Filtrar subcategoría</span><select disabled={disabled || !categoryId} value={subcategoryId} onChange={(event) => changeFilters({ subcategory_id: event.target.value })}><option value="">Todas las subcategorías</option>{selectedCategory?.subcategories.map((child) => <option key={child.subcategory_id} value={child.subcategory_id}>{child.name}{!child.is_active || !selectedCategory.is_active ? " (archivada)" : ""}</option>)}</select></label>
-        <label className="field"><span>Estado de gastos</span><select disabled={disabled} value={state} onChange={(event) => changeFilters({ state: event.target.value })}><option value="active">Vigentes</option><option value="voided">Anulados</option><option value="all">Todos</option></select></label>
+        {!analysis && <label className="field"><span>Estado de gastos</span><select disabled={disabled} value={state} onChange={(event) => changeFilters({ state: event.target.value })}><option value="active">Vigentes</option><option value="voided">Anulados</option><option value="all">Todos</option></select></label>}
       </div>
       <form className="expense-search" onSubmit={(event) => { event.preventDefault(); changeFilters({ search: searchDraft.trim() }); }}>
         <label className="field"><span>Buscar descripción</span><input type="search" disabled={disabled} maxLength={200} value={searchDraft} onChange={(event) => setSearchDraft(event.target.value)} /></label><button type="submit" className="button button-quiet" disabled={disabled}>Buscar</button>
-        <button type="button" className="button button-quiet" disabled={disabled} onClick={() => { setSearchDraft(""); setParams({ period }); }}>Limpiar filtros</button>
+        <button type="button" className="button button-quiet" disabled={disabled} onClick={() => { setSearchDraft(""); setParams(analysis ? { period, view: "analysis" } : { period }); }}>Limpiar filtros</button>
       </form>
     </section>
-    {loading ? <LoadingState label="Cargando gastos…" /> : error ? <ErrorState message={error} onRetry={() => setRevision((value) => value + 1)} /> : result && <section className="list-panel" aria-label="Historial de gastos">
+    {analysis ? <ExpenseAnalysis filters={{ ...parseUtilityPeriod(period)!, category_id: categoryId || undefined, subcategory_id: subcategoryId || undefined, search }} /> : loading ? <LoadingState label="Cargando gastos…" /> : error ? <ErrorState message={error} onRetry={() => setRevision((value) => value + 1)} /> : result && <section className="list-panel" aria-label="Historial de gastos">
       <div className="list-toolbar utility-catalog-toolbar"><h2>Movimientos</h2><span className="results-count">{result.total_count} {result.total_count === 1 ? "gasto" : "gastos"}</span></div>
       {result.items.length === 0 ? <EmptyState title="No hay gastos con estos filtros" message="Selecciona otro mes o registra un gasto. Los anulados se consultan desde Estado de gastos." action={!disabled && available && state === "active" ? { label: "Registrar gasto", onClick: () => setEditor({ kind: "new" }) } : undefined} /> : <div className="expense-days">{[...groups].map(([day, expenses]) => <section className="expense-day" key={day} aria-label={formatDate(day)}>
         <h3>{formatDate(day)}</h3><ul className="utility-history-list">{expenses.map((expense) => {

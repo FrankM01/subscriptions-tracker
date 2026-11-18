@@ -1,5 +1,5 @@
 import type {
-  Expense, ExpenseInput, ExpenseFilters, ExpensePage, ExpenseCategory, ExpenseSubcategory, ExpenseCategoryUpdateInput,
+  ExpenseMonthlySummary, ExpenseSummaryFilters, Expense, ExpenseInput, ExpenseFilters, ExpensePage, ExpenseCategory, ExpenseSubcategory, ExpenseCategoryUpdateInput,
   RenewalAlert,
   RenewalConfirmationInput,
   RenewalEntry,
@@ -65,6 +65,13 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  getExpenseMonthlySummary: (filters: ExpenseSummaryFilters) => {
+    const params = new URLSearchParams({ year: String(filters.year), month: String(filters.month) });
+    for (const key of ["category_id", "subcategory_id", "search"] as const) {
+      if (filters[key]) params.set(key, filters[key]);
+    }
+    return request<ExpenseMonthlySummary>(`/expenses/summary?${params}`);
+  },
   listExpenseCategories: () => request<ExpenseCategory[]>("/expense-categories"),
   createExpenseCategory: (name: string) =>
     request<Omit<ExpenseCategory, "subcategories">>("/expense-categories", { method: "POST", body: JSON.stringify({ name }) }),

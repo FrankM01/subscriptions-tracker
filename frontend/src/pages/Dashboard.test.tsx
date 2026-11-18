@@ -14,6 +14,7 @@ const totals: UtilityMonthlySummary = {
 
 beforeEach(() => {
   vi.spyOn(format, "todayInLima").mockReturnValue("2026-11-30");
+  vi.spyOn(api, "getExpenseMonthlySummary").mockResolvedValue({ year: 2026, month: 11, count: 2, total_amount: "14.00", categories: [], subcategories: [], days: [] });
   vi.spyOn(api, "getSummary").mockResolvedValue({ total_monthly_cost: "100.00" });
   vi.spyOn(api, "getAlerts").mockResolvedValue([]);
   vi.spyOn(api, "listSubscriptions").mockResolvedValue([]);
@@ -138,4 +139,19 @@ it("does not invent zero debt totals while loading and explains a fully empty re
     total_paid: "0.00", overdue_before_month_count: 0, total_overdue_before_month: "0.00" });
   expect(await within(debts).findByText("No hay cuotas con vencimiento este mes.")).toBeInTheDocument();
   expect(within(debts).getByText("No tienes cuotas pendientes vencidas de meses anteriores.")).toBeInTheDocument();
+});
+
+it("separates performed daily expenses and retries their summary independently", async () => {
+  vi.mocked(api.getExpenseMonthlySummary).mockRejectedValueOnce(new ApiError(500, "No se pudo consultar gastos."));
+  openDashboard();
+  const expenses = screen.getByRole("region", { name: "Gastos diarios de este mes" });
+  expect(await within(expenses).findByRole("alert")).toHaveTextContent("No se pudo consultar gastos.");
+  expect(within(expenses).queryByLabelText("Totales de gastos diarios del mes")).not.toBeInTheDocument();
+  await userEvent.click(within(expenses).getByRole("button", { name: "Reintentar" }));
+  expect(await within(expenses).findByText("Gastos vigentes · 2")).toBeInTheDocument();
+  expect(expenses).toHaveTextContent("14.00");
+  expect(expenses).toHaveTextContent("no incorpora pagos de los otros módulos");
+  expect(within(expenses).getByRole("link", { name: "Ver análisis de gastos" })).toHaveAttribute("href", "/gastos?period=2026-11&view=analysis");
+  expect(api.getExpenseMonthlySummary).toHaveBeenCalledWith(expect.objectContaining({ year: 2026, month: 11 }));
+  expect(api.getSummary).toHaveBeenCalledTimes(1);
 });

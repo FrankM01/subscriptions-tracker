@@ -95,3 +95,12 @@ describe("API client", () => {
     await expect(api.getSummary()).rejects.toThrow("Verifica que el servidor esté activo");
   });
 });
+
+it("authenticates expense analytics and encodes shared filters without movement state or pagination", async () => {
+  vi.spyOn(auth, "getAccessToken").mockResolvedValue("expenses-token");
+  const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
+  vi.stubGlobal("fetch", fetchMock);
+  const filters = { year: 2025, month: 11, category_id: "food", subcategory_id: "drinks", search: "té & café", state: "voided" as const, limit: 50, offset: 100 };
+  await api.getExpenseMonthlySummary(filters);
+  expect(fetchMock).toHaveBeenCalledWith("/expenses/summary?year=2025&month=11&category_id=food&subcategory_id=drinks&search=t%C3%A9+%26+caf%C3%A9", expect.objectContaining({ headers: { Authorization: "Bearer expenses-token" } }));
+});

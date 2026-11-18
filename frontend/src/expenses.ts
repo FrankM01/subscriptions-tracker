@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, ApiError } from "./api";
-import type { ExpenseCategory } from "./types";
+import type { ExpenseCategory, ExpenseMonthlySummary, ExpenseSummaryFilters } from "./types";
 
 export function expenseError(error: unknown): string {
   return error instanceof ApiError ? error.message : "No se pudo guardar. Intenta nuevamente.";
@@ -25,4 +25,22 @@ export function useExpenseCategories() {
     return () => { active = false; };
   }, [revision]);
   return { categories, loading, error, reload: () => setRevision((value) => value + 1) };
+}
+
+export function useExpenseSummary({ year, month, category_id, subcategory_id, search }: ExpenseSummaryFilters) {
+  const [summary, setSummary] = useState<ExpenseMonthlySummary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [revision, setRevision] = useState(0);
+  useEffect(() => {
+    let active = true;
+    setLoading(true); setError("");
+    api.getExpenseMonthlySummary({ year, month, category_id, subcategory_id, search }).then((value) => {
+      if (active) setSummary(value);
+    }).catch((caught: unknown) => {
+      if (active) setError(caught instanceof ApiError ? caught.message : "No se pudo cargar el resumen de gastos.");
+    }).finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [year, month, category_id, subcategory_id, search, revision]);
+  return { summary, loading, error, reload: () => setRevision((value) => value + 1) };
 }
