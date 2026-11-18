@@ -18,6 +18,11 @@ beforeEach(() => {
   vi.spyOn(api, "getAlerts").mockResolvedValue([]);
   vi.spyOn(api, "listSubscriptions").mockResolvedValue([]);
   vi.spyOn(api, "getUtilityMonthlySummary").mockResolvedValue(totals);
+  vi.spyOn(api, "getDebtMonthlySummary").mockResolvedValue({
+    year: 2026, month: 11, pending_count: 2, paid_count: 1,
+    total_pending: "200.50", total_paid: "100.25",
+    overdue_before_month_count: 1, total_overdue_before_month: "75.00",
+  });
 });
 
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
@@ -78,4 +83,46 @@ it("does not show zero totals while the service summary is still loading", async
   resolve(totals);
   await waitFor(() => expect(within(services).queryByRole("status")).not.toBeInTheDocument());
   expect(within(services).getByText("Pendiente · 2")).toBeInTheDocument();
+});
+
+it("separates monthly debt installments from earlier arrears and subscription estimates", async () => {
+  openDashboard();
+  const debts = screen.getByRole("region", { name: "Deudas de este mes" });
+  await within(debts).findByText("Cuotas pendientes · 2");
+  expect(api.getDebtMonthlySummary).toHaveBeenCalledWith(2026, 11);
+  expect(debts).toHaveTextContent("200.50");
+  expect(debts).toHaveTextContent("100.25");
+  expect(debts).toHaveTextContent("1 cuota vencida pendiente");
+  expect(debts).toHaveTextContent("75.00");
+  expect(within(debts).getByRole("link", { name: "Ver cuotas del mes" })).toHaveAttribute("href", "/deudas?period=2026-11");
+  expect(within(debts).getByRole("link", { name: "Ver todas las deudas" })).toHaveAttribute("href", "/deudas");
+  expect(screen.getByRole("region", { name: "Gasto mensual estimado" })).toHaveTextContent("100.00");
+  expect(debts).toHaveTextContent("incluidas deudas archivadas");
+});
+
+it("retains earlier arrears even when no installments fall in the current month", async () => {
+  vi.mocked(api.getDebtMonthlySummary).mockResolvedValue({
+    year: 2026, month: 11, pending_count: 0, paid_count: 0,
+    total_pending: "0.00", total_paid: "0.00",
+    overdue_before_month_count: 2, total_overdue_before_month: "150.00",
+  });
+  openDashboard();
+  const debts = screen.getByRole("region", { name: "Deudas de este mes" });
+  expect(await within(debts).findByText("No hay cuotas con vencimiento este mes.")).toBeInTheDocument();
+  expect(debts).toHaveTextContent("2 cuotas vencidas pendientes");
+  expect(debts).toHaveTextContent("150.00");
+});
+
+it("retries debt failures independently without showing stale or zero amounts", async () => {
+  vi.mocked(api.getDebtMonthlySummary).mockRejectedValueOnce(new ApiError(500, "No se pudo consultar Deudas."));
+  openDashboard();
+  const debts = screen.getByRole("region", { name: "Deudas de este mes" });
+  expect(await within(debts).findByRole("alert")).toHaveTextContent("No se pudo consultar Deudas.");
+  expect(within(debts).queryByLabelText("Totales de deudas del mes")).not.toBeInTheDocument();
+  expect(screen.getByRole("region", { name: "Gasto mensual estimado" })).toHaveTextContent("100.00");
+  await userEvent.click(within(debts).getByRole("button", { name: "Reintentar" }));
+  await within(debts).findByText("Cuotas pendientes · 2");
+  expect(api.getDebtMonthlySummary).toHaveBeenCalledTimes(2);
+  expect(api.getSummary).toHaveBeenCalledTimes(1);
+  expect(api.getUtilityMonthlySummary).toHaveBeenCalledTimes(1);
 });

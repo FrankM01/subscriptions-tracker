@@ -89,7 +89,7 @@ declarar cuotas previamente pagadas y confirmar, corregir o deshacer pagos compl
 Calcula avance, saldo pendiente y resumen por mes de vencimiento, conservando
 obligaciones al archivar. En **Deudas** puedes crear préstamos, consultar su
 calendario y registrar pagos completos, corregir fechas o deshacer un pago.
-El resumen de deudas en el dashboard corresponde a la siguiente etapa D4.
+El dashboard separa cuotas pendientes y pagadas del mes de los atrasos de meses anteriores.
 Consulta el [plan de deudas](docs/deudas-plan.md) y el
 [contrato de API y verificación](docs/deudas-api.md), y la
 [guía de la interfaz](docs/deudas-interfaz.md).

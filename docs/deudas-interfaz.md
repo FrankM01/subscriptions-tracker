@@ -47,7 +47,7 @@ de tokens y errores del resto de módulos. Vite redirige `/debts` a la API local
 
 La navegación móvil tiene cuatro destinos. Se reutilizan los componentes y
 estilos visuales existentes, con formularios en la página y campos apilados
-en pantallas pequeñas. El dashboard de deudas queda pendiente de D4.
+en pantallas pequeñas. El dashboard de deudas se añadió en D4, documentado abajo.
 
 ## Verificación
 
@@ -72,3 +72,29 @@ en pantallas pequeñas. El dashboard de deudas queda pendiente de D4.
 
 No se reconstruyeron los contenedores personales ni se modificó su base.
 El cierre operativo requiere respaldo y actualización local en D6.
+
+## D4: resumen de deudas en el dashboard
+
+El dashboard muestra **Deudas de este mes**, según el mes actual de Lima, con
+conteos e importes de cuotas pendientes y pagadas por fecha de vencimiento.
+**Atrasos de meses anteriores** presenta su conteo e importe por separado,
+incluso cuando el mes actual no tiene cuotas. No suma estos importes a las
+estimaciones de suscripciones ni a los aportes de servicios.
+
+Se incluyen deudas archivadas y se excluyen las cuotas previas declaradas.
+**Ver cuotas del mes** abre `/deudas?period=YYYY-MM`; **Ver todas las deudas**
+abre el catálogo sin filtro mensual para consultar también los atrasos.
+
+La carga y el reintento de Deudas son independientes de los otros módulos.
+Durante carga o error no se muestran ceros ni totales anteriores como si
+fueran datos vigentes. Un mes sin cuotas y la ausencia de atrasos tienen
+mensajes explícitos.
+
+Validación D4: **43 pruebas frontend aprobadas**, TypeScript y build correctos;
+**2 E2E existentes aprobadas**. Tres pruebas nuevas verifican separación de
+importes, atrasos sin cuotas del mes y reintento independiente ante errores.
+Chromium con API/base temporal confirmó importes de S/ 50.00 pendiente,
+S/ 100.25 pagado y S/ 100.25 de atraso anterior, incluyendo una deuda archivada.
+Enlace al mes verificado; capturas en `output/playwright/debts-dashboard-*.png`
+a 1440×960 y 390×844 sin desbordamiento horizontal. Detector sin hallazgos
+en el componente nuevo. No se modificaron backend, esquema ni datos personales.

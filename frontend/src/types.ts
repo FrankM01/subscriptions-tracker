@@ -146,3 +146,14 @@ export interface Debt extends DebtInput {
 export interface DebtUpdateInput extends Partial<DebtInput> {
   is_active?: boolean;
 }
+
+export interface DebtMonthlySummary {
+  year: number;
+  month: number;
+  pending_count: number;
+  paid_count: number;
+  total_pending: string;
+  total_paid: string;
+  overdue_before_month_count: number;
+  total_overdue_before_month: string;
+}

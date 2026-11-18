@@ -8,7 +8,7 @@ import type {
   Summary,
   Utility, UtilityInput, UtilityUpdateInput, UtilityEntry, UtilityEntryInput,
   UtilityEntryUpdateInput, UtilityPaymentConfirmationInput, UtilityMonthlySummary,
-  Debt, DebtInput, DebtUpdateInput, DebtInstallment,
+  Debt, DebtInput, DebtUpdateInput, DebtInstallment, DebtMonthlySummary,
 } from "./types";
 import { getAccessToken } from "./auth";
 
@@ -64,6 +64,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  getDebtMonthlySummary: (year: number, month: number) =>
+    request<DebtMonthlySummary>(`/debts/summary?${new URLSearchParams({ year: String(year), month: String(month) })}`),
   listDebts: () => request<Debt[]>("/debts"),
   getDebt: (id: string) => request<Debt>(`/debts/${id}`),
   createDebt: (input: DebtInput) =>
