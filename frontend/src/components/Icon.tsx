@@ -1,8 +1,9 @@
 import type { ReactNode, SVGProps } from "react";
 
-type IconName = "overview" | "subscriptions" | "utilities" | "debts" | "arrow" | "plus" | "close" | "calendar" | "check" | "chevron";
+type IconName = "overview" | "subscriptions" | "utilities" | "debts" | "expenses" | "arrow" | "plus" | "close" | "calendar" | "check" | "chevron";
 
 const paths: Record<IconName, ReactNode> = {
+  expenses: <><path d="M5 3h14v18l-3-2-4 2-4-2-3 2V3Z" /><path d="M9 7h6M9 11h6M9 15h3" /></>,
   debts: <><rect x="4" y="3" width="16" height="18" rx="3" /><path d="M8 8h8M8 12h3M8 16h3m3-2 2 2 3-4" /></>,
   overview: <><rect x="3" y="3" width="8" height="8" rx="2" /><rect x="14" y="3" width="7" height="5" rx="2" /><rect x="14" y="11" width="7" height="10" rx="2" /><rect x="3" y="14" width="8" height="7" rx="2" /></>,
   subscriptions: <><rect x="4" y="3" width="16" height="18" rx="3" /><path d="M8 8h8M8 12h8M8 16h5" /></>,

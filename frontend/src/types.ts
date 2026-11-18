@@ -157,3 +157,55 @@ export interface DebtMonthlySummary {
   overdue_before_month_count: number;
   total_overdue_before_month: string;
 }
+
+export interface ExpenseSubcategory {
+  subcategory_id: string;
+  category_id: string;
+  name: string;
+  is_active: boolean;
+}
+
+export interface ExpenseCategory {
+  category_id: string;
+  name: string;
+  is_active: boolean;
+  subcategories: ExpenseSubcategory[];
+}
+
+export interface ExpenseInput {
+  description: string;
+  quantity: string;
+  total_amount: string;
+  expense_date: string;
+  category_id: string;
+  subcategory_id: string | null;
+  notes: string | null;
+}
+
+export interface Expense extends ExpenseInput {
+  expense_id: string;
+  is_voided: boolean;
+}
+
+export interface ExpenseFilters {
+  year: number;
+  month: number;
+  category_id?: string;
+  subcategory_id?: string;
+  search?: string;
+  state?: "active" | "voided" | "all";
+  limit?: number;
+  offset?: number;
+}
+
+export interface ExpensePage {
+  items: Expense[];
+  total_count: number;
+  limit: number;
+  offset: number;
+}
+
+export interface ExpenseCategoryUpdateInput {
+  name?: string;
+  is_active?: boolean;
+}

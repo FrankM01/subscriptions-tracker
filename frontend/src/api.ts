@@ -1,4 +1,5 @@
 import type {
+  Expense, ExpenseInput, ExpenseFilters, ExpensePage, ExpenseCategory, ExpenseSubcategory, ExpenseCategoryUpdateInput,
   RenewalAlert,
   RenewalConfirmationInput,
   RenewalEntry,
@@ -64,6 +65,26 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  listExpenseCategories: () => request<ExpenseCategory[]>("/expense-categories"),
+  createExpenseCategory: (name: string) =>
+    request<Omit<ExpenseCategory, "subcategories">>("/expense-categories", { method: "POST", body: JSON.stringify({ name }) }),
+  updateExpenseCategory: (id: string, input: ExpenseCategoryUpdateInput) =>
+    request<Omit<ExpenseCategory, "subcategories">>(`/expense-categories/${id}`, { method: "PATCH", body: JSON.stringify(input) }),
+  createExpenseSubcategory: (categoryId: string, name: string) =>
+    request<ExpenseSubcategory>(`/expense-categories/${categoryId}/subcategories`, { method: "POST", body: JSON.stringify({ name }) }),
+  updateExpenseSubcategory: (categoryId: string, id: string, input: ExpenseCategoryUpdateInput) =>
+    request<ExpenseSubcategory>(`/expense-categories/${categoryId}/subcategories/${id}`, { method: "PATCH", body: JSON.stringify(input) }),
+  listExpenses: (filters: ExpenseFilters) => {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => { if (value !== undefined && value !== "") params.set(key, String(value)); });
+    return request<ExpensePage>(`/expenses?${params}`);
+  },
+  createExpense: (input: ExpenseInput) =>
+    request<Expense>("/expenses", { method: "POST", body: JSON.stringify(input) }),
+  updateExpense: (id: string, input: Partial<ExpenseInput>) =>
+    request<Expense>(`/expenses/${id}`, { method: "PATCH", body: JSON.stringify(input) }),
+  voidExpense: (id: string) => request<Expense>(`/expenses/${id}/void`, { method: "POST" }),
+  restoreExpense: (id: string) => request<Expense>(`/expenses/${id}/restore`, { method: "POST" }),
   getDebtMonthlySummary: (year: number, month: number) =>
     request<DebtMonthlySummary>(`/debts/summary?${new URLSearchParams({ year: String(year), month: String(month) })}`),
   listDebts: () => request<Debt[]>("/debts"),

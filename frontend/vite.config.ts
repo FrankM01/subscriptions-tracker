@@ -11,6 +11,8 @@ export default defineConfig({
       "/subscriptions": "http://127.0.0.1:8000",
       "/utilities": "http://127.0.0.1:8000",
       "/debts": "http://127.0.0.1:8000",
+      "/expenses": "http://127.0.0.1:8000",
+      "/expense-categories": "http://127.0.0.1:8000",
     },
   },
   test: {
