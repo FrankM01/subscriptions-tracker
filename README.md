@@ -82,6 +82,15 @@ más abajo.
 
 ## Documentación técnica
 
+### Gastos diarios: API disponible
+
+La API autenticada `/expenses` permite registrar, editar, anular y restaurar
+gastos con cantidad e importe total independientes. `/expense-categories`
+administra categorías y subcategorías. El resumen mensual prepara los totales
+y series de los gráficos; la interfaz corresponde a G3–G4.
+Consulta el [plan de Gastos diarios](docs/gastos-diarios-plan.md) y el
+[contrato y pruebas de la API](docs/gastos-diarios-api.md).
+
 ### Módulo Deudas: cuotas mensuales
 
 La API autenticada `/debts` permite registrar préstamos con cuotas mensuales,

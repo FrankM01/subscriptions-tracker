@@ -14,6 +14,9 @@ from app.services.utility_service import UtilityService
 from app.repositories.debt_repository import DebtRepository
 from app.routers.debts import router as debts_router
 from app.services.debt_service import DebtService
+from app.repositories.expense_repository import ExpenseRepository
+from app.routers.expenses import router as expenses_router, categories_router as expense_categories_router
+from app.services.expense_service import ExpenseService
 
 # Use the configured PostgreSQL or SQLite database for all API operations.
 engine = make_engine()
@@ -26,11 +29,14 @@ set_service(service)
 app = FastAPI(title="Subscriptions Tracker", version="1.0.0")
 app.state.utility_service = UtilityService(UtilityRepository(engine))
 app.state.debt_service = DebtService(DebtRepository(engine))
+app.state.expense_service = ExpenseService(ExpenseRepository(engine))
 
 app.include_router(auth_router)
 app.include_router(subscriptions_router)
 app.include_router(utilities_router)
 app.include_router(debts_router)
+app.include_router(expenses_router)
+app.include_router(expense_categories_router)
 
 # The API stays usable during development before the frontend is built.
 PROJECT_ROOT = Path(__file__).resolve().parents[1]

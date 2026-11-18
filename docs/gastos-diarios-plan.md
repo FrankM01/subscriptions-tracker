@@ -50,7 +50,7 @@ comprobantes/importación, pendientes y Sankey.
 
 - [x] G0: alcance, documentación y rama independiente.
 - [x] G1: contratos, persistencia, catálogo inicial y migración aditiva.
-- [ ] G2: repositorio, servicio y API autenticada `/expenses` y `/expense-categories`.
+- [x] G2: repositorio, servicio y API autenticada `/expenses` y `/expense-categories`.
 - [ ] G3: registro rápido, historial, edición, anulación/restauración y categorías.
 - [ ] G4: análisis mensual, gráficos y resumen del dashboard.
 - [ ] G5: verificación integral con PostgreSQL temporal, frontend y navegador.
@@ -95,4 +95,4 @@ Alembic `check` confirma correspondencia entre modelos y migración; el catálog
 recupera los mismos identificadores al revertir y volver a migrar. `git diff
 --check` sin errores. Sin cambios frontend en esta etapa, sin commit automático
 y sin aplicar migraciones en la base personal. La API y la validación de
-actividad de categorías se implementarán en G2.
+actividad de categorías se completaron en [G2](gastos-diarios-api.md).
