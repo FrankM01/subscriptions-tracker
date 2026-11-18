@@ -26,12 +26,15 @@ def test_frontend_routes_serve_index_and_assets_without_capturing_api(tmp_path):
     assert client.get("/suscripciones").status_code == 200
     assert client.get("/servicios").text == "<html><div id='root'></div></html>"
     assert client.get("/servicios/abc-123?period=2025-11").status_code == 200
+    assert client.get("/deudas").text == "<html><div id='root'></div></html>"
+    assert client.get("/deudas/abc-123?period=2025-11").status_code == 200
     assert client.get("/suscripciones/abc-123").status_code == 200
     assert client.get("/assets/app.js").text == "console.log('web');"
     assert client.get("/favicon.svg").headers["content-type"] == "image/svg+xml"
     assert client.get("/subscriptions/health").json() == {"status": "ok"}
     assert client.get("/subscriptions/not-found").status_code == 404
     assert client.get("/utilities/not-found").status_code == 404
+    assert client.get("/debts/not-found").status_code == 404
 
 
 def test_frontend_is_not_mounted_until_a_build_exists(tmp_path):

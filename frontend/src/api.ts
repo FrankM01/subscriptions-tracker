@@ -8,6 +8,7 @@ import type {
   Summary,
   Utility, UtilityInput, UtilityUpdateInput, UtilityEntry, UtilityEntryInput,
   UtilityEntryUpdateInput, UtilityPaymentConfirmationInput, UtilityMonthlySummary,
+  Debt, DebtInput, DebtUpdateInput, DebtInstallment,
 } from "./types";
 import { getAccessToken } from "./auth";
 
@@ -63,6 +64,18 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  listDebts: () => request<Debt[]>("/debts"),
+  getDebt: (id: string) => request<Debt>(`/debts/${id}`),
+  createDebt: (input: DebtInput) =>
+    request<Debt>("/debts", { method: "POST", body: JSON.stringify(input) }),
+  updateDebt: (id: string, input: DebtUpdateInput) =>
+    request<Debt>(`/debts/${id}`, { method: "PATCH", body: JSON.stringify(input) }),
+  confirmDebtPayment: (id: string, installmentId: string, paidDate: string) =>
+    request<DebtInstallment>(`/debts/${id}/installments/${installmentId}/confirm`, { method: "POST", body: JSON.stringify({ paid_date: paidDate }) }),
+  correctDebtPayment: (id: string, installmentId: string, paidDate: string) =>
+    request<DebtInstallment>(`/debts/${id}/installments/${installmentId}`, { method: "PATCH", body: JSON.stringify({ paid_date: paidDate }) }),
+  undoDebtPayment: (id: string, installmentId: string) =>
+    request<DebtInstallment>(`/debts/${id}/installments/${installmentId}/undo`, { method: "POST" }),
   listSubscriptions: () => request<Subscription[]>("/subscriptions"),
   getSummary: () => request<Summary>("/subscriptions/summary"),
   getAlerts: () => request<RenewalAlert[]>("/subscriptions/alerts"),

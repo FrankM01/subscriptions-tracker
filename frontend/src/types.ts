@@ -109,3 +109,40 @@ export interface UtilityMonthlySummary {
   total_pending: string;
   total_paid: string;
 }
+
+export interface DebtInput {
+  name: string;
+  creditor: string;
+  installment_amount: string;
+  total_installments: number;
+  previously_paid_installments: number;
+  first_due_date: string | null;
+  notes: string | null;
+}
+
+export interface DebtInstallment {
+  installment_id: string;
+  debt_id: string;
+  number: number;
+  amount: string;
+  due_date: string;
+  paid_date: string | null;
+  status: "pending" | "paid";
+}
+
+export interface Debt extends DebtInput {
+  debt_id: string;
+  is_active: boolean;
+  paid_installments: number;
+  pending_installments: number;
+  remaining_balance: string;
+  next_due_date: string | null;
+  overdue_installments: number;
+  status: "pending" | "settled";
+  schedule_editable: boolean;
+  installments: DebtInstallment[];
+}
+
+export interface DebtUpdateInput extends Partial<DebtInput> {
+  is_active?: boolean;
+}

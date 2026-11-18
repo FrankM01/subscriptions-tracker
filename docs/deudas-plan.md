@@ -29,7 +29,7 @@ persistir contadores duplicados. Una deuda queda liquidada al completar sus cuot
 - [x] D0: documentar alcance y crear rama `feature/debts-module`.
 - [x] D1: contratos, tablas, migración aditiva y generador de calendario.
 - [x] D2: repositorio y servicio transaccionales; API autenticada `/debts`.
-- [ ] D3: pantalla de deudas, detalle, calendario y formularios.
+- [x] D3: pantalla de deudas, detalle, calendario y formularios.
 - [ ] D4: resumen del mes en dashboard y vencidos anteriores separados.
 - [ ] D5: verificación PostgreSQL, frontend, navegación y móvil.
 - [ ] D6: respaldo y actualización local con Docker Compose.
@@ -61,5 +61,6 @@ regresión con PostgreSQL temporal y probar escritorio y móvil antes de D6.
 Inicio: 2026-11-17. El trabajo de suscripciones con pago inicial se guarda en
 un commit separado de `feature/utilities-module`, incorporado como base de esta
 rama. No se publican cambios. D1 no modifica la base de datos personal ni levanta
-contenedores personales. La API de D2 está implementada; la interfaz y el
-dashboard requieren D3–D4. Contrato y evidencia: [API de deudas](deudas-api.md).
+contenedores personales. La API de D2 y la interfaz de D3 están implementadas;
+el dashboard requiere D4. Contrato: [API de deudas](deudas-api.md).
+Interfaz y verificación: [Deudas D3](deudas-interfaz.md).

@@ -328,7 +328,7 @@ svg { width: 19px; height: 19px; flex: 0 0 auto; }
   .history-description small { font-size: 9px; }
   .history-amount { font-size: 10px; }
   .undo-button { grid-column: 2 / -1; justify-self: start; margin: -4px 0 8px; }
-  .mobile-nav { position: fixed; inset: auto 0 0; z-index: 20; display: grid; grid-template-columns: repeat(3, 1fr); padding: 7px max(20px, env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left)); border-top: 1px solid var(--line); background: rgba(255,255,255,.96); backdrop-filter: blur(12px); }
+  .mobile-nav { position: fixed; inset: auto 0 0; z-index: 20; display: grid; grid-template-columns: repeat(4, 1fr); padding: 7px max(20px, env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left)); border-top: 1px solid var(--line); background: rgba(255,255,255,.96); backdrop-filter: blur(12px); }
   .mobile-nav-link { display: grid; justify-items: center; gap: 4px; padding: 5px 0; color: #849088; font-size: 9px; font-weight: 600; }
   .mobile-nav-link svg { width: 19px; height: 19px; }
   .mobile-nav-link.active { color: var(--green); }
@@ -413,4 +413,19 @@ svg { width: 19px; height: 19px; flex: 0 0 auto; }
   .utility-entry-actions .button { min-height: 40px; }
   .utility-history { padding: 18px 16px; }
   .utility-history .panel-heading { align-items: start; }
+}
+
+.debt-controls { margin-top: 26px; }
+.debt-controls input[type="search"] { min-width: 0; }
+.debt-totals { gap: 24px 36px; }
+.debt-archive-badge { margin-left: 8px; }
+.debt-notes { margin-block: 18px; max-width: 72ch; }
+.debt-calendar { margin-top: 28px; }
+.utility-row-copy small.debt-overdue, .debt-overdue { color: #994a40; }
+.debt-calendar .utility-controls { margin-top: 24px; }
+@media (max-width: 760px) {
+  .debt-controls .field { flex-basis: 100%; }
+  .debt-calendar .utility-controls .field { flex-basis: 100%; }
+  .debt-calendar .utility-entry-actions .button { min-height: 44px; }
+  .mobile-nav-link { min-height: 44px; }
 }

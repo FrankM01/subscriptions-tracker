@@ -39,6 +39,14 @@ def mount_frontend(app: FastAPI, distribution: Path) -> bool:
     def frontend_utilities() -> FileResponse:
         return FileResponse(index_file)
 
+    @app.get("/deudas", include_in_schema=False)
+    def frontend_debts() -> FileResponse:
+        return FileResponse(index_file)
+
+    @app.get("/deudas/{frontend_path:path}", include_in_schema=False)
+    def frontend_debt_page(frontend_path: str) -> FileResponse:
+        return FileResponse(index_file)
+
     @app.get("/servicios/{frontend_path:path}", include_in_schema=False)
     def frontend_utility_page(frontend_path: str) -> FileResponse:
         return FileResponse(index_file)
