@@ -52,6 +52,9 @@ def test_initial_migration_creates_tables_and_constraints(tmp_path, monkeypatch)
             "utility_entries",
             "debts",
             "debt_installments",
+            "expense_categories",
+            "expense_subcategories",
+            "expenses",
         }
         assert any(
             fk.get("options", {}).get("ondelete") == "CASCADE"

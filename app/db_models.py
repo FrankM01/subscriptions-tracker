@@ -7,11 +7,13 @@ from sqlalchemy import (
     CheckConstraint,
     Date,
     ForeignKey,
+    ForeignKeyConstraint,
     Integer,
     String,
     Text,
     UniqueConstraint,
     true,
+    false,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -178,3 +180,65 @@ class DebtInstallmentRecord(Base):
     due_date: Mapped[date] = mapped_column(Date, nullable=False)
     paid_date: Mapped[date | None] = mapped_column(Date)
     debt: Mapped[DebtRecord] = relationship(back_populates="installments")
+
+
+class ExpenseCategoryRecord(Base):
+    __tablename__ = "expense_categories"
+    __table_args__ = (
+        CheckConstraint("length(trim(name)) > 0", name="ck_expense_categories_name"),
+        CheckConstraint("length(trim(name_key)) > 0", name="ck_expense_categories_key"),
+        UniqueConstraint("name_key", name="uq_expense_categories_key"),
+    )
+
+    category_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    name_key: Mapped[str] = mapped_column(Text, nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default=true())
+
+
+class ExpenseSubcategoryRecord(Base):
+    __tablename__ = "expense_subcategories"
+    __table_args__ = (
+        CheckConstraint("length(trim(name)) > 0", name="ck_expense_subcategories_name"),
+        CheckConstraint("length(trim(name_key)) > 0", name="ck_expense_subcategories_key"),
+        UniqueConstraint("category_id", "name_key", name="uq_expense_subcategories_key"),
+        UniqueConstraint("category_id", "subcategory_id", name="uq_expense_subcategories_parent"),
+    )
+
+    subcategory_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    category_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("expense_categories.category_id", ondelete="RESTRICT"),
+        nullable=False, index=True,
+    )
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    name_key: Mapped[str] = mapped_column(Text, nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default=true())
+
+
+class ExpenseRecord(Base):
+    """Quantity is measured in thousandths; total is never multiplied by it."""
+
+    __tablename__ = "expenses"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["category_id", "subcategory_id"],
+            ["expense_subcategories.category_id", "expense_subcategories.subcategory_id"],
+            ondelete="RESTRICT", name="fk_expenses_subcategory_parent",
+        ),
+        CheckConstraint("length(trim(description)) > 0", name="ck_expenses_description"),
+        CheckConstraint("quantity_millis BETWEEN 1 AND 999999999", name="ck_expenses_quantity"),
+        CheckConstraint("total_amount_cents BETWEEN 1 AND 999999999", name="ck_expenses_total"),
+    )
+
+    expense_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    description: Mapped[str] = mapped_column(String(200), nullable=False)
+    quantity_millis: Mapped[int] = mapped_column(Integer, nullable=False)
+    total_amount_cents: Mapped[int] = mapped_column(Integer, nullable=False)
+    expense_date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
+    category_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("expense_categories.category_id", ondelete="RESTRICT"),
+        nullable=False, index=True,
+    )
+    subcategory_id: Mapped[str | None] = mapped_column(String(36))
+    notes: Mapped[str | None] = mapped_column(Text)
+    is_voided: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=false())
