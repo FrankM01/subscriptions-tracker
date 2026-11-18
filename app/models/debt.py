@@ -5,7 +5,7 @@ from decimal import Decimal
 from typing import Annotated
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator, model_validator
 
 from app.utils.dates import today_in_lima
 
@@ -71,6 +71,11 @@ class DebtInstallment(BaseModel):
     due_date: date
     paid_date: date | None = None
 
+    @computed_field
+    @property
+    def status(self) -> str:
+        return "paid" if self.paid_date else "pending"
+
 
 class DebtPaymentConfirmation(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -83,3 +88,69 @@ class DebtPaymentConfirmation(BaseModel):
         if value is not None and value > today_in_lima():
             raise ValueError("La fecha de pago no puede estar en el futuro.")
         return value
+
+
+class DebtPaymentCorrection(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    paid_date: date
+
+    @field_validator("paid_date")
+    @classmethod
+    def payment_not_in_future(cls, value: date) -> date:
+        DebtPaymentConfirmation.payment_not_in_future(value)
+        return value
+
+
+class DebtUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str | None = None
+    creditor: str | None = None
+    notes: str | None = None
+    is_active: bool | None = Field(default=None, strict=True)
+    installment_amount: DebtAmount | None = None
+    total_installments: int | None = Field(default=None, gt=0, strict=True)
+    previously_paid_installments: int | None = Field(default=None, ge=0, strict=True)
+    first_due_date: date | None = None
+
+    @field_validator("name", "creditor")
+    @classmethod
+    def nonblank(cls, value: str | None) -> str | None:
+        return DebtCreate.nonblank(value) if value is not None else None
+
+    @field_validator("notes")
+    @classmethod
+    def normalize_notes(cls, value: str | None) -> str | None:
+        return DebtCreate.normalize_notes(value)
+
+    @model_validator(mode="after")
+    def validate_update(self) -> "DebtUpdate":
+        if not self.model_fields_set:
+            raise ValueError("Incluye al menos un campo para actualizar.")
+        for name in self.model_fields_set - {"notes", "first_due_date"}:
+            if getattr(self, name) is None:
+                raise ValueError(f"{name} no puede ser null.")
+        return self
+
+
+class DebtDetail(Debt):
+    paid_installments: int
+    pending_installments: int
+    remaining_balance: Decimal
+    next_due_date: date | None
+    overdue_installments: int
+    status: str
+    schedule_editable: bool
+    installments: list[DebtInstallment]
+
+
+class DebtMonthlySummary(BaseModel):
+    year: int
+    month: int
+    pending_count: int
+    paid_count: int
+    total_pending: Decimal
+    total_paid: Decimal
+    overdue_before_month_count: int
+    total_overdue_before_month: Decimal

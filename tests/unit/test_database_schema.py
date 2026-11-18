@@ -43,15 +43,18 @@ def test_initial_migration_creates_tables_and_constraints(tmp_path, monkeypatch)
     engine = make_engine(f"sqlite:///{database_path}")
     try:
         inspector = inspect(engine)
+        assert inspector is not None
         assert set(inspector.get_table_names()) == {
             "alembic_version",
             "subscriptions",
             "renewals",
             "utilities",
             "utility_entries",
+            "debts",
+            "debt_installments",
         }
         assert any(
-            fk["options"].get("ondelete") == "CASCADE"
+            fk.get("options", {}).get("ondelete") == "CASCADE"
             for fk in inspector.get_foreign_keys("renewals")
         )
         assert {

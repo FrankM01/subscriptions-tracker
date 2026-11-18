@@ -82,6 +82,15 @@ más abajo.
 
 ## Documentación técnica
 
+### Módulo Deudas: API disponible
+
+La API autenticada `/debts` permite registrar préstamos con cuotas mensuales,
+declarar cuotas previamente pagadas y confirmar, corregir o deshacer pagos completos.
+Calcula avance, saldo pendiente y resumen por mes de vencimiento, conservando
+obligaciones al archivar. La interfaz está pendiente de la etapa D3.
+Consulta el [plan de deudas](docs/deudas-plan.md) y el
+[contrato de API y verificación](docs/deudas-api.md).
+
 ### Registrar una suscripción que ya pagaste
 
 En **Nueva suscripción**, activa **Ya pagué este período**. Indica la fecha programada del
