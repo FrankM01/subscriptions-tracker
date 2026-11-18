@@ -126,3 +126,16 @@ it("retries debt failures independently without showing stale or zero amounts", 
   expect(api.getSummary).toHaveBeenCalledTimes(1);
   expect(api.getUtilityMonthlySummary).toHaveBeenCalledTimes(1);
 });
+
+it("does not invent zero debt totals while loading and explains a fully empty result", async () => {
+  let finish: (value: Awaited<ReturnType<typeof api.getDebtMonthlySummary>>) => void = () => {};
+  vi.mocked(api.getDebtMonthlySummary).mockReturnValue(new Promise((resolve) => { finish = resolve; }));
+  openDashboard();
+  const debts = screen.getByRole("region", { name: "Deudas de este mes" });
+  expect(within(debts).getByRole("status")).toHaveTextContent("Cargando resumen de deudas");
+  expect(within(debts).queryByLabelText("Totales de deudas del mes")).not.toBeInTheDocument();
+  finish({ year: 2026, month: 11, pending_count: 0, paid_count: 0, total_pending: "0.00",
+    total_paid: "0.00", overdue_before_month_count: 0, total_overdue_before_month: "0.00" });
+  expect(await within(debts).findByText("No hay cuotas con vencimiento este mes.")).toBeInTheDocument();
+  expect(within(debts).getByText("No tienes cuotas pendientes vencidas de meses anteriores.")).toBeInTheDocument();
+});

@@ -127,3 +127,17 @@ it("offers retry and a return link for missing or unavailable debts", async () =
   await userEvent.click(screen.getByRole("button", { name: "Reintentar" }));
   expect(await screen.findByRole("heading", { name: "Préstamo estudios" })).toBeInTheDocument();
 });
+
+it("registers an already settled agreement without inventing a first pending date", async () => {
+  const create = vi.spyOn(api, "createDebt").mockResolvedValue(debt);
+  await open("/deudas");
+  await userEvent.click(screen.getByRole("button", { name: "Nueva deuda" }));
+  const form = screen.getByRole("region", { name: "Nueva deuda" });
+  await userEvent.type(within(form).getByLabelText("Nombre de la deuda"), "Liquidada");
+  await userEvent.type(within(form).getByLabelText("Persona a quien debo"), "Ana");
+  await userEvent.type(within(form).getByLabelText(/^Importe de cada cuota/), "20.10");
+  fireEvent.change(within(form).getByLabelText("Cuotas pagadas antes de usar la app"), { target: { value: "6" } });
+  expect(within(form).queryByLabelText(/^Primer vencimiento pendiente/)).not.toBeInTheDocument();
+  await userEvent.click(within(form).getByRole("button", { name: "Crear deuda" }));
+  await waitFor(() => expect(create).toHaveBeenCalledWith(expect.objectContaining({ previously_paid_installments: 6, first_due_date: null })));
+});

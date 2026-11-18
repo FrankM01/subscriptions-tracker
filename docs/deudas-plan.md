@@ -31,7 +31,7 @@ persistir contadores duplicados. Una deuda queda liquidada al completar sus cuot
 - [x] D2: repositorio y servicio transaccionales; API autenticada `/debts`.
 - [x] D3: pantalla de deudas, detalle, calendario y formularios.
 - [x] D4: resumen del mes en dashboard y vencidos anteriores separados.
-- [ ] D5: verificación PostgreSQL, frontend, navegación y móvil.
+- [x] D5: verificación PostgreSQL, frontend, navegación y móvil.
 - [ ] D6: respaldo y actualización local con Docker Compose.
 
 D2 incluye creación atómica, listado/detalle, edición del acuerdo según sus
@@ -64,3 +64,4 @@ rama. No se publican cambios. D1 no modifica la base de datos personal ni levant
 contenedores personales. La API de D2 y la interfaz de D3 están implementadas;
 el resumen del dashboard de D4 también está implementado. Contrato: [API de deudas](deudas-api.md).
 Interfaz y verificación: [Deudas D3](deudas-interfaz.md).
+Verificación integral D5: [Resultados y límites](deudas-verificacion.md).

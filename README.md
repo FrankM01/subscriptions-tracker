@@ -93,6 +93,8 @@ El dashboard separa cuotas pendientes y pagadas del mes de los atrasos de meses 
 Consulta el [plan de deudas](docs/deudas-plan.md) y el
 [contrato de API y verificación](docs/deudas-api.md), y la
 [guía de la interfaz](docs/deudas-interfaz.md).
+La [verificación integral D5](docs/deudas-verificacion.md) reúne las pruebas
+de PostgreSQL, frontend y los recorridos de navegador del módulo.
 
 ### Registrar una suscripción que ya pagaste
 

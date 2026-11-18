@@ -345,3 +345,35 @@ def test_unmigrated_database_returns_public_error(debts, tmp_path):
         assert response.json() == {"detail": "No se pudo acceder a las deudas."}
     finally:
         missing.dispose()
+
+
+def test_database_constraints_reject_duplicate_orphan_and_invalid_debt_rows(debts):
+    client, _, engine, _ = debts
+    debt = create(client)
+    insert = text("INSERT INTO debt_installments (installment_id, debt_id, number, amount_cents, due_date) "
+                  "VALUES (:id, :debt, :number, :amount, :due)")
+    for overrides in ({}, {"number": 0}, {"number": 7, "amount": 0},
+                      {"number": 7, "debt": str(uuid4())}):
+        with pytest.raises(IntegrityError), engine.begin() as connection:
+            connection.execute(insert, {"id": str(uuid4()), "debt": debt["debt_id"],
+                                        "number": 2, "amount": 10025,
+                                        "due": date(2025, 1, 31), **overrides})
+    for assignment in ("previously_paid_installments=7", "total_installments=0",
+                       "installment_amount_cents=0", "creditor=' '", "first_due_date=NULL"):
+        with pytest.raises(IntegrityError), engine.begin() as connection:
+            connection.execute(text(f"UPDATE debts SET {assignment} WHERE debt_id=:id"), {"id": debt["debt_id"]})
+    with pytest.raises(IntegrityError), engine.begin() as connection:
+        connection.execute(text("DELETE FROM debts WHERE debt_id=:id"), {"id": debt["debt_id"]})
+    assert client.get(f"/debts/{debt['debt_id']}").json() == debt
+
+
+def test_declared_settlement_creates_no_installments_or_monthly_payments(debts):
+    client, _, _, _ = debts
+    debt = create(client, previously_paid_installments=6, first_due_date=None)
+    assert debt["status"] == "settled"
+    assert debt["paid_installments"] == 6
+    assert debt["installments"] == []
+    assert debt["remaining_balance"] == "0.00"
+    summary = client.get("/debts/summary?year=2025&month=1").json()
+    assert summary["paid_count"] == 0 and summary["total_paid"] == "0.00"
+    assert summary["pending_count"] == 0 and summary["total_overdue_before_month"] == "0.00"
