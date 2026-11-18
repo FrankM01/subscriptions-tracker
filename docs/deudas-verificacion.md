@@ -99,9 +99,9 @@ la herramienta de navegador y datos ficticios; no es un nuevo spec E2E del repos
 El recorrido de navegador usa `SUBSCRIPTIONS_ENV=test`, sin login real. La
 protección OIDC se verifica por separado con JWT firmados y PostgreSQL, sin
 depender de Keycloak externo. El login real y el reinicio de contenedores
-personales se comprobarán durante D6.
+personales se verificaron posteriormente en [D6](deudas-operacion-local.md).
 
 No se ejecutó la migración sobre la base personal ni se reconstruyó su app.
 El entorno temporal de navegador y los contenedores de prueba se cerraron
-después de verificar. D6 sigue pendiente: respaldo verificado, actualización
-local, acceso con Keycloak y comprobación de persistencia tras reinicio.
+después de verificar. El cierre operativo se completó posteriormente en D6:
+respaldo verificado, actualización local, acceso y persistencia tras reinicio.

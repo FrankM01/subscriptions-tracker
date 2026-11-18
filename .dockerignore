@@ -12,6 +12,7 @@ __pycache__
 .coverage
 htmlcov
 data
+backups
 frontend/node_modules
 frontend/dist
 frontend/playwright-report

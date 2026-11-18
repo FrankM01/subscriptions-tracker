@@ -95,6 +95,8 @@ Consulta el [plan de deudas](docs/deudas-plan.md) y el
 [guía de la interfaz](docs/deudas-interfaz.md).
 La [verificación integral D5](docs/deudas-verificacion.md) reúne las pruebas
 de PostgreSQL, frontend y los recorridos de navegador del módulo.
+La [actualización local D6](docs/deudas-operacion-local.md) documenta el respaldo
+restaurado, la migración y la persistencia comprobada tras reiniciar Docker.
 
 ### Registrar una suscripción que ya pagaste
 
