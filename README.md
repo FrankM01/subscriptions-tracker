@@ -98,8 +98,11 @@ Consulta el [plan de Gastos diarios](docs/gastos-diarios-plan.md) y el
 [guía de análisis mensual](docs/gastos-diarios-analisis.md).
 La [verificación integral G5](docs/gastos-diarios-verificacion.md) aprobó
 366 pruebas Python con PostgreSQL temporal, 64 frontend, build y 2 E2E,
-además del recorrido del módulo en navegador. La actualización personal queda
-para G6.
+además del recorrido del módulo en navegador. La
+[actualización local G6](docs/gastos-diarios-operacion-local.md) ya tiene respaldo
+restaurado, migración y persistencia verificados. El usuario confirmó el acceso
+a los cuatro módulos, Análisis y categorías con su sesión habitual; G0–G6
+completadas.
 
 ### Módulo Deudas: cuotas mensuales
 

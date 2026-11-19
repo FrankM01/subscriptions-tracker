@@ -54,7 +54,7 @@ comprobantes/importación, pendientes y Sankey.
 - [x] G3: registro rápido, historial, edición, anulación/restauración y categorías.
 - [x] G4: análisis mensual, gráficos y resumen del dashboard.
 - [x] G5: verificación integral con PostgreSQL temporal, frontend y navegador.
-- [ ] G6: respaldo restaurado y actualización del entorno personal.
+- [x] G6: respaldo restaurado y actualización del entorno personal.
 
 G2 debe validar categoría activa y pertenencia/actividad de subcategoría al
 asignar clasificación. Editar otros campos de un gasto con clasificación
@@ -100,5 +100,7 @@ actividad de categorías se completaron en [G2](gastos-diarios-api.md).
 La interfaz de registro e historial se completó en [G3](gastos-diarios-interfaz.md).
 El análisis mensual y el resumen del dashboard se completaron en
 [G4](gastos-diarios-analisis.md). La [verificación integral G5](gastos-diarios-verificacion.md)
-está aprobada. La siguiente etapa es G6: respaldo restaurado y actualización
-del entorno personal.
+está aprobada. En [G6](gastos-diarios-operacion-local.md) ya se verificaron
+respaldo restaurado, actualización y persistencia del entorno personal.
+El usuario confirmó el acceso a los cuatro módulos, Análisis y categorías
+con su sesión habitual. G0–G6 completadas.
