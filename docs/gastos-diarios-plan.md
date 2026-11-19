@@ -53,7 +53,7 @@ comprobantes/importación, pendientes y Sankey.
 - [x] G2: repositorio, servicio y API autenticada `/expenses` y `/expense-categories`.
 - [x] G3: registro rápido, historial, edición, anulación/restauración y categorías.
 - [x] G4: análisis mensual, gráficos y resumen del dashboard.
-- [ ] G5: verificación integral con PostgreSQL temporal, frontend y navegador.
+- [x] G5: verificación integral con PostgreSQL temporal, frontend y navegador.
 - [ ] G6: respaldo restaurado y actualización del entorno personal.
 
 G2 debe validar categoría activa y pertenencia/actividad de subcategoría al
@@ -99,5 +99,6 @@ actividad de categorías se completaron en [G2](gastos-diarios-api.md).
 
 La interfaz de registro e historial se completó en [G3](gastos-diarios-interfaz.md).
 El análisis mensual y el resumen del dashboard se completaron en
-[G4](gastos-diarios-analisis.md). La siguiente etapa es G5: verificación integral
-del módulo completo, antes de actualizar el entorno personal en G6.
+[G4](gastos-diarios-analisis.md). La [verificación integral G5](gastos-diarios-verificacion.md)
+está aprobada. La siguiente etapa es G6: respaldo restaurado y actualización
+del entorno personal.

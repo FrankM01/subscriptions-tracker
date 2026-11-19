@@ -325,3 +325,43 @@ def test_all_routes_require_authentication_and_signed_token_works(expenses, monk
     assert client.get('/expenses/summary?'+MONTH,headers=headers).json()["count"] == 0
     assert client.post(base+'/restore',headers=headers).status_code == 200
     assert client.get('/expenses/summary?'+MONTH,headers=headers).json()["total_amount"] == "8.00"
+
+
+def test_multiple_pages_reconcile_after_correction_reclassification_and_month_transfer(expenses):
+    client, repository, engine = expenses
+    cats = catalog(client)
+    food, transport = cats["Alimentación"], cats["Transporte"]
+    identifiers = set()
+    for index in range(55):
+        item = repository.create(ExpenseCreate.model_validate({
+            "description": f"Compra {index:02}", "total_amount": "0.10",
+            "quantity": "0.125", "expense_date": "2025-11-01",
+            "category_id": food["category_id"],
+        }))
+        identifiers.add(str(item.expense_id))
+    first = client.get("/expenses?" + MONTH + "&limit=50").json()
+    second = client.get("/expenses?" + MONTH + "&limit=50&offset=50").json()
+    rows = first["items"] + second["items"]
+    assert first["total_count"] == second["total_count"] == 55
+    assert len(first["items"]) == 50 and len(second["items"]) == 5
+    assert {row["expense_id"] for row in rows} == identifiers and len(rows) == len(identifiers)
+    assert client.get("/expenses?" + MONTH + "&limit=50").json() == first
+    assert sum(Decimal(row["total_amount"]) for row in rows) == Decimal("5.50")
+    assert client.get("/expenses/summary?" + MONTH).json()["total_amount"] == "5.50"
+    path = "/expenses/" + rows[0]["expense_id"]
+    assert client.patch(path, json={"total_amount": "0.25", "category_id": transport["category_id"]}).status_code == 200
+    summary = client.get("/expenses/summary?" + MONTH).json()
+    assert summary["total_amount"] == "5.65" and summary["count"] == 55
+    assert {row["category_name"]: row["total_amount"] for row in summary["categories"]} == {"Alimentación": "5.40", "Transporte": "0.25"}
+    assert client.patch("/expense-categories/" + transport["category_id"], json={"name": "Traslados", "is_active": False}).status_code == 200
+    archived = client.get("/expenses/summary?" + MONTH + "&category_id=" + transport["category_id"]).json()
+    assert archived["total_amount"] == "0.25" and archived["categories"][0]["category_name"] == "Traslados"
+    assert client.patch(path, json={"expense_date": "2025-10-31"}).status_code == 200
+    assert client.get("/expenses/summary?" + MONTH).json()["total_amount"] == "5.40"
+    assert client.get("/expenses/summary?year=2025&month=10").json()["total_amount"] == "0.25"
+    engine.dispose()
+    assert client.get(path).json()["quantity"] == "0.125"
+    assert client.post(path + "/void").status_code == 200
+    assert client.get("/expenses/summary?year=2025&month=10").json()["total_amount"] == "0.00"
+    assert client.post(path + "/restore").status_code == 200
+    assert client.get("/expenses/summary?year=2025&month=10").json()["total_amount"] == "0.25"

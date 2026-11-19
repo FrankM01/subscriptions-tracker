@@ -33,6 +33,8 @@ def expense_database(request, tmp_path, monkeypatch):
         command.upgrade(config, "a91e42b7c830")
         engine = make_engine(url)
         with engine.begin() as connection:
+            connection.execute(text("INSERT INTO subscriptions (subscription_id,name,cost_cents,billing_cycle,renewal_date,anchor_day) VALUES ('prior','Streaming',1990,'monthly','2026-12-13',13)"))
+            connection.execute(text("INSERT INTO renewals (subscription_id,scheduled_date,paid_date,paid_amount_cents,resulting_renewal_date,resulting_billing_cycle,resulting_anchor_day) VALUES ('prior','2026-11-13','2026-11-12',2050,'2026-12-13','monthly',13)"))
             connection.execute(text("INSERT INTO utilities (utility_id,name) VALUES ('prior','Luz')"))
             connection.execute(text("INSERT INTO utility_entries (entry_id,utility_id,year,month,amount_cents) VALUES ('prior','prior',2026,11,1234)"))
             connection.execute(text("INSERT INTO debts (debt_id,name,creditor,installment_amount_cents,total_installments,previously_paid_installments,first_due_date) VALUES ('prior','Préstamo','Persona',1000,2,1,'2026-11-13')"))
@@ -58,12 +60,18 @@ def test_migration_catalog_and_reversion_preserve_previous_modules(expense_datab
         categories = connection.execute(text("SELECT category_id,name FROM expense_categories ORDER BY name")).all()
     command.downgrade(config, "a91e42b7c830")
     with engine.connect() as connection:
+        assert connection.scalar(text("SELECT cost_cents FROM subscriptions WHERE subscription_id='prior'")) == 1990
+        assert connection.scalar(text("SELECT paid_amount_cents FROM renewals WHERE subscription_id='prior'")) == 2050
         assert connection.scalar(text("SELECT amount_cents FROM utility_entries WHERE entry_id='prior'")) == 1234
         assert connection.scalar(text("SELECT amount_cents FROM debt_installments WHERE installment_id='prior'")) == 1000
     command.upgrade(config, "head")
     command.check(config)
     with engine.connect() as connection:
         assert connection.execute(text("SELECT category_id,name FROM expense_categories ORDER BY name")).all() == categories
+        assert connection.scalar(text("SELECT cost_cents FROM subscriptions WHERE subscription_id='prior'")) == 1990
+        assert connection.scalar(text("SELECT paid_amount_cents FROM renewals WHERE subscription_id='prior'")) == 2050
+        assert connection.scalar(text("SELECT amount_cents FROM utility_entries WHERE entry_id='prior'")) == 1234
+        assert connection.scalar(text("SELECT amount_cents FROM debt_installments WHERE installment_id='prior'")) == 1000
 
 
 def payload(connection):

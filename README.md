@@ -96,6 +96,10 @@ Consulta el [plan de Gastos diarios](docs/gastos-diarios-plan.md) y el
 [contrato y pruebas de la API](docs/gastos-diarios-api.md), además de la
 [guía de registro](docs/gastos-diarios-interfaz.md) y la
 [guía de análisis mensual](docs/gastos-diarios-analisis.md).
+La [verificación integral G5](docs/gastos-diarios-verificacion.md) aprobó
+366 pruebas Python con PostgreSQL temporal, 64 frontend, build y 2 E2E,
+además del recorrido del módulo en navegador. La actualización personal queda
+para G6.
 
 ### Módulo Deudas: cuotas mensuales
 

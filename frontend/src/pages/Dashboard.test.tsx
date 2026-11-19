@@ -155,3 +155,16 @@ it("separates performed daily expenses and retries their summary independently",
   expect(api.getExpenseMonthlySummary).toHaveBeenCalledWith(expect.objectContaining({ year: 2026, month: 11 }));
   expect(api.getSummary).toHaveBeenCalledTimes(1);
 });
+
+it("does not invent daily expense totals while loading and explains an empty month", async () => {
+  let finish: (value: Awaited<ReturnType<typeof api.getExpenseMonthlySummary>>) => void = () => {};
+  vi.mocked(api.getExpenseMonthlySummary).mockReturnValueOnce(new Promise((resolve) => { finish = resolve; }));
+  openDashboard();
+  const expenses = screen.getByRole("region", { name: "Gastos diarios de este mes" });
+  expect(within(expenses).getByRole("status")).toHaveTextContent("Cargando resumen de gastos diarios");
+  expect(within(expenses).queryByLabelText("Totales de gastos diarios del mes")).not.toBeInTheDocument();
+  finish({ year: 2026, month: 11, count: 0, total_amount: "0.00", categories: [], subcategories: [], days: [] });
+  expect(await within(expenses).findByText("Aún no hay gastos diarios vigentes registrados este mes.")).toBeInTheDocument();
+  expect(expenses).toHaveTextContent("0.00");
+  expect(within(expenses).getByRole("link", { name: "Ver análisis de gastos" })).toBeInTheDocument();
+});
